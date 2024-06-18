@@ -7,21 +7,9 @@ import { buttonVariants } from "@/components/ui/button";
 export default function NextPage() {
     return (
         <React.Fragment>
-            <Head>
+            {/* <Head>
                 <title>Next - Nextron (with-tailwindcss)</title>
-            </Head>
-            <div className="grid grid-col-1 text-2xl w-full text-center">
-                <div>
-                    <Image
-                        className="ml-auto mr-auto"
-                        src="/images/logo.png"
-                        alt="Logo image"
-                        width={256}
-                        height={256}
-                    />
-                </div>
-                <span>⚡ Nextron ⚡</span>
-            </div>
+            </Head> */}
             <div className="mt-1 w-full flex-wrap flex justify-center">
                 <Link href="/home" className={buttonVariants()}>
                     Go to home page

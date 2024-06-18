@@ -15,12 +15,18 @@ if (isProd) {
   await app.whenReady()
 
   const mainWindow = createWindow('main', {
-    width: 1000,
-    height: 600,
+    width: 1024,
+    height: 640,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
+    autoHideMenuBar: true, // hides default menu bar, press ALT to show
+    backgroundColor: '#5865F2',
+    icon: path.join(__dirname, 'resources/icon.ico'), // TODO
   })
+
+  // Maximize window
+  mainWindow.maximize();
 
   if (isProd) {
     await mainWindow.loadURL('app://./home')
