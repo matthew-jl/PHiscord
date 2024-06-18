@@ -11,9 +11,12 @@ export default function HomePage() {
         <React.Fragment>
             <Sidebar />
             
-            <div className="mt-1 w-full flex-wrap flex justify-center">
+            <div className="mt-1 w-full flex justify-center">
                 <Link href="/next" className={buttonVariants()}>
                     Go to next page
+                </Link>
+                <Link href="/login" className={buttonVariants()}>
+                    Go to login page
                 </Link>
             </div>
         </React.Fragment>

@@ -16,7 +16,8 @@ module.exports = {
         },
         extend: {
             colors: {
-                blurple: '#5865F2',
+                dcBlurple: '#5865F2',
+                dcGreen: '#57F287',
                 gray: {
                     900: '#202225',
                     800: '#2f3136',
