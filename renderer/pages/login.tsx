@@ -1,9 +1,17 @@
 import Link from 'next/link'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { auth } from '../lib/firebaseConfig'
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { useRouter } from 'next/router'
+import useAuth from '@/lib/hooks/useAuth'
 
 const LoginPage = () => {
+
+    const router = useRouter();
+    const isAuthenticated = useAuth();
+    if (isAuthenticated) {
+        router.push('/home');
+    }
 
     const handleSignIn = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -13,6 +21,7 @@ const LoginPage = () => {
         signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             console.log(userCredential);
+            router.push('/home');
         })
         .catch((error) => {
             console.log(error);
@@ -22,6 +31,7 @@ const LoginPage = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-900">
+        <Link href="/home">Go to home</Link>
         <div className="flex flex-col bg-gray-700 min-w-96 text-center text-white p-7 rounded-lg shadow-md">
             <h2 className="font-bold text-xl mb-1">Welcome back!</h2>
             <p className="text-sm mb-4">We're so excited to see you again!</p>

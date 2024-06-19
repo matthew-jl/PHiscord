@@ -7,6 +7,7 @@ import { getAuth } from "firebase/auth";
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
+// TODO: use .env.local instead of explicit values
 const firebaseConfig = {
   apiKey: "***REMOVED***",
   authDomain: "***REMOVED***",

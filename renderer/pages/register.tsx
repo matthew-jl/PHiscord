@@ -1,9 +1,17 @@
 import { auth } from '@/lib/firebaseConfig';
+import useAuth from '@/lib/hooks/useAuth';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link'
+import { useRouter } from 'next/router';
 import React from 'react'
 
 const registerPage = () => {
+
+    const router = useRouter();
+    const isAuthenticated = useAuth();
+    if (isAuthenticated) {
+        router.push('/home');
+    }
 
     const handleSignUp = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -14,6 +22,7 @@ const registerPage = () => {
         .then((userCredential) => {
             const user = userCredential.user;
             console.log(user);
+            router.push('/home');
         })
         .catch((error) => {
             console.log(error.code, error.message);
