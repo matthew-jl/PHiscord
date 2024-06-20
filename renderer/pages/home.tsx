@@ -1,31 +1,61 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
-import { buttonVariants } from "@/components/ui/button";
 
+import { buttonVariants } from "@/components/ui/button";
 import Sidebar from "@/components/Sidebar";
 import SignoutButton from "@/components/SignoutButton";
 
+import useAuth from "@/lib/hooks/useAuth";
+import { doc, getDoc } from "@firebase/firestore";
+import { db } from "@/lib/firebaseConfig";
+
 export default function HomePage() {
 
-        return (
-            <React.Fragment>
-                <Sidebar />
-                
-                <div className="mt-1 w-full flex justify-center">
-                    <Link href="/next" className={buttonVariants()}>
-                        Go to next page
-                    </Link>
-                    <Link href="/login" className={buttonVariants()}>
-                        Go to login page
-                    </Link>
-                    <Link href="/register" className={buttonVariants()}>
-                        Go to register page
-                    </Link>
-                    <SignoutButton />
-                </div>
-            </React.Fragment>
-        );
+    const user = useAuth();
+    const [userData, setUserData] = useState(null);
+
+    // have to use useEffect because fetching data is an asynchronous operation
+    useEffect(() => {
+        const fetchUserData = async () => {
+            // If user is logged in,
+            if (user) {
+                // Read data from "users" collection in Cloud Firestore database
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    console.log("Current user: ", userSnap.data());
+                    setUserData(userSnap.data());
+                } else {
+                    // userSnap.data() will be undefined
+                    console.log("Current user undefined.")
+                }
+            }
+        };
+        fetchUserData();
+    }, [user]);
+
+    return (
+        <React.Fragment>
+            <Sidebar />
+            
+            <div className="mt-1 w-full flex justify-center">
+                {/* conditional rendering if userData exists (user logged in) */}
+                {userData && <p>Hello, {userData.username}</p>}
+
+                <Link href="/next" className={buttonVariants()}>
+                    Go to next page
+                </Link>
+                <Link href="/login" className={buttonVariants()}>
+                    Go to login page
+                </Link>
+                <Link href="/register" className={buttonVariants()}>
+                    Go to register page
+                </Link>
+                <SignoutButton />
+            </div>
+        </React.Fragment>
+    );
 
 }

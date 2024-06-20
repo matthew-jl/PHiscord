@@ -23,4 +23,5 @@ const auth = getAuth(app);
 const analytics = app.name && typeof window !== 'undefined' ? getAnalytics(app) : null;
 const db = getFirestore(app);
 
+
 export { app, auth, analytics, db }

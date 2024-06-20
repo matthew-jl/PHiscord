@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { auth } from "../firebaseConfig";
 
 function useAuth() {
-    const [ user, setLocalUser] = useState<any | null>(null);
+    const [user, setLocalUser] = useState<any | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user: any) => {

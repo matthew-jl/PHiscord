@@ -1,12 +1,12 @@
-import { auth } from '@/lib/firebaseConfig';
+import { auth, db } from '@/lib/firebaseConfig';
 import useAuth from '@/lib/hooks/useAuth';
+import { collection, doc, setDoc } from '@firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link'
 import { useRouter } from 'next/router';
 import React from 'react'
 
 const registerPage = () => {
-
     const router = useRouter();
     const isAuthenticated = useAuth();
     if (isAuthenticated) {
@@ -17,11 +17,23 @@ const registerPage = () => {
         e.preventDefault();
         let email = e.currentTarget.email.value;
         let password = e.currentTarget.password.value;
+        let username = e.currentTarget.username.value;
+        // console.log(email, password, username);
 
         createUserWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
+        .then( async (userCredential) => {
             const user = userCredential.user;
             console.log(user);
+            email = '';
+            password = '';
+
+            // Adds user data to Cloud Firestore database in "users" collection
+            const data = {
+                email: user.email,
+                username: username,
+            }
+            await setDoc(doc(db, "users", user.uid), data);
+
             router.push('/home');
         })
         .catch((error) => {
@@ -34,6 +46,10 @@ const registerPage = () => {
         <div className="flex flex-col bg-gray-700 min-w-96 text-center text-white p-7 rounded-lg shadow-md">
             <h2 className="font-bold text-xl mb-4">Create an account</h2>
             <form onSubmit={ handleSignUp }>
+                <div className="text-left mb-2">
+                    <label htmlFor="username" className="text-xs font-semibold">USERNAME</label>
+                    <input type="username" id="username" className="min-w-full  bg-gray-900 p-2 rounded-md"></input>
+                </div>
                 <div className="text-left mb-2">
                     <label htmlFor="email" className="text-xs font-semibold">EMAIL</label>
                     <input id="email" className="min-w-full  bg-gray-900 p-2 rounded-md"></input>

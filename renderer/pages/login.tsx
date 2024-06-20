@@ -21,6 +21,8 @@ const LoginPage = () => {
         signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             console.log(userCredential);
+            email = '';
+            password = '';
             router.push('/home');
         })
         .catch((error) => {
