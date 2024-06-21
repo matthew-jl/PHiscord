@@ -16,18 +16,21 @@ module.exports = {
         },
         extend: {
             colors: {
-                dcBlurple: '#5865F2',
-                dcGreen: '#57F287',
-                gray: {
-                    900: '#202225',
-                    800: '#2f3136',
-                    700: '#36393f',
-                    600: '#4f545c',
-                    400: '#d4d7dc',
-                    300: '#e3e5e8',
-                    200: '#ebedef',
-                    100: '#f2f3f5',
+
+                // discord colors
+                dc: {
+                    blurple: '#5865F2',
+                    green: '#57F287',
+                    900: 'hsl(var(--dc900))',
+                    800: 'hsl(var(--dc800))',
+                    700: 'hsl(var(--dc700))',
+                    600: 'hsl(var(--dc600))',
+                    400: 'hsl(var(--dc400))',
+                    300: 'hsl(var(--dc300))',
+                    200: 'hsl(var(--dc200))',
+                    100: 'hsl(var(--dc100))',
                 },
+
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",
                 ring: "hsl(var(--ring))",

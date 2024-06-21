@@ -33,6 +33,16 @@
       --ring: 0 0% 3.9%;
 
       --radius: 0.5rem;
+
+      /* discord colors (light) */
+      --dc900: 220 14% 96%;  /* Sidebar color */
+      --dc800: 220 14% 92%;  /* Slightly lighter */
+      --dc700: 220 14% 88%;  /* Lighter gray */
+      --dc600: 220 14% 84%;  /* Light gray */
+      --dc400: 220 14% 80%;  /* Medium light gray */
+      --dc300: 220 14% 70%;  /* Medium gray */
+      --dc200: 220 14% 60%;  /* Darker medium gray */
+      --dc100: 220 14% 50%;  /* Lightest gray */
     }
 
     .dark {
@@ -63,6 +73,16 @@
       --border: 0 0% 14.9%;
       --input: 0 0% 14.9%;
       --ring: 0 0% 83.1%;
+
+      /* discord colors (dark) */
+      --dc900: 222 6% 14%;
+      --dc800: 220 6% 20%;
+      --dc700: 220 7% 23%;
+      --dc600: 220 8% 33%;
+      --dc400: 220 14% 84%;
+      --dc300: 220 13% 90%;
+      --dc200: 220 11% 93%;
+      --dc100: 220 10% 96%;
     }
   }
 
@@ -78,12 +98,12 @@
   @layer components {
     .sidebar-icon {
       @apply flex items-center justify-center h-12 w-12 mx-auto my-2 
-      bg-gray-800 text-dcGreen hover:bg-dcGreen hover:text-white
+      bg-background text-dc-green hover:bg-dc-green hover:text-primary
       rounded-3xl hover:rounded-xl transition-all ease-linear cursor-pointer;
     }
 
     .sidebar-tooltip {
-      @apply absolute w-auto min-w-max left-16 text-white bg-gray-900 
+      @apply absolute w-auto min-w-max left-16 text-primary bg-background
       p-2 m-2 rounded-md shadow-md text-xs font-bold cursor-none
       scale-0 transition-all origin-left;
     }
