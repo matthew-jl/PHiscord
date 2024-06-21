@@ -22,7 +22,7 @@ if (isProd) {
     },
     autoHideMenuBar: true, // hides default menu bar, press ALT to show
     backgroundColor: '#5865F2',
-    icon: path.join(__dirname, 'resources/icon.ico'), // TODO
+    icon: path.join(__dirname, '../resources/icon.ico'), // TODO
   })
 
   // Maximize window
