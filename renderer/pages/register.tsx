@@ -53,15 +53,15 @@ const registerPage = () => {
             <form onSubmit={ handleSignUp }>
                 <div className="text-left mb-2">
                     <label htmlFor="username" className="text-xs font-semibold">USERNAME</label>
-                    <input type="username" id="username" className="min-w-full  bg-dc-900 p-2 rounded-md"></input>
+                    <input type="username" id="username" className="min-w-full  bg-dc-900 p-2 rounded-md focus-visible:outline-0"></input>
                 </div>
                 <div className="text-left mb-2">
                     <label htmlFor="email" className="text-xs font-semibold">EMAIL</label>
-                    <input id="email" className="min-w-full  bg-dc-900 p-2 rounded-md"></input>
+                    <input id="email" className="min-w-full  bg-dc-900 p-2 rounded-md focus-visible:outline-0"></input>
                 </div>
                 <div className="text-left mb-8">
                     <label htmlFor="password" className="text-xs font-semibold">PASSWORD</label>
-                    <input type="password" id="password" className="min-w-full  bg-dc-900 p-2 rounded-md"></input>
+                    <input type="password" id="password" className="min-w-full  bg-dc-900 p-2 rounded-md focus-visible:outline-0"></input>
                 </div>
                 <Button className='font-bold min-w-full bg-dc-blurple text-white hover:bg-dc-blurple/70 mb-2'>Register</Button>
             </form>

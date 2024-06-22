@@ -7,8 +7,11 @@ import ThemeImage from './theme-image';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from './ui/tooltip';
+import { useModal } from '@/lib/hooks/useModalStore';
 
 const Sidebar = () => {
+  const { onOpen } = useModal();
+
   return (
     // sidebar background
     <div className="fixed top-0 left-0 h-screen w-16 bg-dc-900 text-primary shadow-md flex flex-col" suppressHydrationWarning>
@@ -25,7 +28,7 @@ const Sidebar = () => {
       <ScrollArea className="h-fit w-full">
         {/* center scroll area items */}
         <div className='flex flex-col items-center'>
-            <SidebarIcon icon={ <IoMdAdd size="27"/> } tooltip="Add a Server"/>
+            <SidebarIcon icon={ <IoMdAdd size="27"/> } tooltip="Add a Server" onClick={() => onOpen('createServer')}/>
             <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
             <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
             <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
@@ -49,13 +52,14 @@ const Sidebar = () => {
 type iconProps = {
   icon : ReactNode,
   tooltip: string,
+  onClick?: () => void,
 };
 
-const SidebarIcon = ({icon, tooltip}: iconProps) => (
+const SidebarIcon = ({icon, tooltip, onClick}: iconProps) => (
     <TooltipProvider delayDuration={100}>
     <Tooltip>
       <TooltipTrigger asChild>
-      <div className="sidebar-icon hover:bg-dc-green hover:text-primary">
+      <div className="sidebar-icon hover:bg-dc-green hover:text-primary" onClick={onClick}>
          { icon }
      </div>
       </TooltipTrigger>

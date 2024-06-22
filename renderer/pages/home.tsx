@@ -10,6 +10,7 @@ import SignoutButton from "@/components/SignoutButton";
 import useAuth from "@/lib/hooks/useAuth";
 import { doc, getDoc } from "@firebase/firestore";
 import { db } from "@/lib/firebaseConfig";
+import InitialModal from "@/components/modals/initial-modal";
 
 export default function HomePage() {
 
@@ -39,8 +40,7 @@ export default function HomePage() {
     return (
         <React.Fragment>
             <Sidebar />
-            
-            <div className="mt-1 w-full flex justify-center">
+            <div className="w-full h-screen flex justify-center pl-16">
                 {/* conditional rendering if userData exists (user logged in) */}
                 {userData && <p>Hello, {userData.username}</p>}
 

@@ -32,7 +32,7 @@ const LoginPage = () => {
         })
     }
 
-
+// TODO: make error/validation messages in login and register
   return (
     <div className="flex justify-center items-center min-h-screen bg-dc-900">
         <div className="absolute top-0 right-0 p-2">
@@ -45,11 +45,11 @@ const LoginPage = () => {
             <form onSubmit={ handleSignIn }>
                 <div className="text-left mb-2">
                     <label htmlFor="email" className="text-xs font-semibold">EMAIL</label>
-                    <input id="email" className="min-w-full  bg-dc-900 p-2 rounded-md"></input>
+                    <input id="email" className="min-w-full bg-dc-900 p-2 rounded-md focus-visible:outline-0"></input>
                 </div>
                 <div className="text-left mb-8">
                     <label htmlFor="password" className="text-xs font-semibold">PASSWORD</label>
-                    <input type="password" id="password" className="min-w-full  bg-dc-900 p-2 rounded-md"></input>
+                    <input type="password" id="password" className="min-w-full bg-dc-900 p-2 rounded-md focus-visible:outline-0"></input>
                 </div>
                 <Button className='font-bold min-w-full bg-dc-blurple text-white hover:bg-dc-blurple/70 mb-2'>Log In</Button>
                 {/* <button className="min-w-full bg-dcBlurple text-white p-2 rounded-md font-bold mb-2">Log In</button> */}

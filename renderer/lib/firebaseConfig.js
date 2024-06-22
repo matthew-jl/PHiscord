@@ -3,18 +3,18 @@ import { getFirestore } from "@firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getStorage, ref } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
-// TODO: use .env.local instead of explicit values
 const firebaseConfig = {
-  apiKey: "***REMOVED***",
-  authDomain: "***REMOVED***",
-  projectId: "***REMOVED***",
-  storageBucket: "***REMOVED***",
-  messagingSenderId: "***REMOVED***",
-  appId: "1:***REMOVED***:web:8433d7155e59053c67c885"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
@@ -22,6 +22,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const analytics = app.name && typeof window !== 'undefined' ? getAnalytics(app) : null;
 const db = getFirestore(app);
+const storage = getStorage();
+// const storageRef = ref(storage); // points to root of our storage
 
-
-export { app, auth, analytics, db }
+export { app, auth, analytics, db, storage }
