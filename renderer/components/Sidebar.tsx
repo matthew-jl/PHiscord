@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useEffect, useState } from 'react'
 import { IconType } from 'react-icons'
 import { IoMdAdd } from "react-icons/io"
 import { FaCompass } from "react-icons/fa";
@@ -8,9 +8,52 @@ import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from './ui/tooltip';
 import { useModal } from '@/lib/hooks/useModalStore';
+import useAuth from '@/lib/hooks/useAuth';
+import { doc, getDoc } from '@firebase/firestore';
+import { db, storage } from '@/lib/firebaseConfig';
+import { useRouter } from 'next/router';
+import { getDownloadURL, ref } from 'firebase/storage';
 
-const Sidebar = () => {
+const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
   const { onOpen } = useModal();
+  const user = useAuth();
+  const [servers, setServers] = useState([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchServers = async () => {
+      if (!user) return;
+
+      // Fetch user data
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) return;
+
+      const userData = userDoc.data();
+      const userServers = userData.servers || {};
+
+      // Fetch server details
+      const serverPromises = Object.keys(userServers).map(async (serverId) => {
+        const serverDoc = await getDoc(doc(db, 'servers', serverId));
+        const serverData = serverDoc.data();
+
+        // Fetch download URL for server image
+        const imageDownloadUrl = await getDownloadURL(ref(storage, serverData.imageUrl));
+
+        const serverName = serverData.name;
+
+        return { id: serverId, ...serverData, imageDownloadUrl, name: serverName };
+      });
+
+      let serverData = await Promise.all(serverPromises);
+
+      // Sort the servers by name (or any other field)
+      serverData = serverData.sort((a, b) => a.name.localeCompare(b.name));
+
+      setServers(serverData);
+    };
+
+    fetchServers();
+  }, [user]);
 
   return (
     // sidebar background
@@ -28,6 +71,18 @@ const Sidebar = () => {
       <ScrollArea className="h-fit w-full">
         {/* center scroll area items */}
         <div className='flex flex-col items-center'>
+
+            {/* Print each server the user is in as a sidebar icon */}
+            {servers.map((server) => (
+              <SidebarIcon
+                key={server.id}
+                icon={<img src={server.imageDownloadUrl} alt={server.name} />}
+                tooltip={server.name}
+                onClick={() => router.push(`/servers/${server.id}/serverPage`)}
+                active={activeServerId === server.id}
+              />
+            ))}
+
             <SidebarIcon icon={ <IoMdAdd size="27"/> } tooltip="Add a Server" onClick={() => onOpen('createServer')}/>
             <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
             <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
@@ -53,13 +108,14 @@ type iconProps = {
   icon : ReactNode,
   tooltip: string,
   onClick?: () => void,
+  active?: boolean,
 };
 
-const SidebarIcon = ({icon, tooltip, onClick}: iconProps) => (
+const SidebarIcon = ({ icon, tooltip, onClick, active = false }: iconProps) => (
     <TooltipProvider delayDuration={100}>
     <Tooltip>
       <TooltipTrigger asChild>
-      <div className="sidebar-icon hover:bg-dc-green hover:text-primary" onClick={onClick}>
+      <div className={`sidebar-icon hover:bg-dc-green hover:text-primary ${active ? 'border-2 border-dc-green rounded-xl' : ''}`} onClick={onClick}>
          { icon }
      </div>
       </TooltipTrigger>

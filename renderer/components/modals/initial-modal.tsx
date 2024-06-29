@@ -24,31 +24,72 @@ import { useForm } from 'react-hook-form'
 import * as z from "zod"
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useModal } from '@/lib/hooks/useModalStore'
-import { storage } from '@/lib/firebaseConfig'
+import { db, storage } from '@/lib/firebaseConfig'
 import { ref, uploadBytes } from 'firebase/storage'
 import { v4 } from 'uuid'
+import { Timestamp, doc, serverTimestamp, setDoc, updateDoc } from '@firebase/firestore'
+import useAuth from '@/lib/hooks/useAuth'
+import { useRouter } from 'next/router'
 
 // make a schema using zod for the form
 const formSchema = z.object({
   name: z.string().min(1, {
     message: 'Server name is required.'
   }),
-  imageUrl: z.string().min(1, {
-    message: 'Server image is required.'
-  })
+  image: z.any().refine((files) => files?.length == 1, "Server icon is required."),
 });
 
 const InitialModal = () => {
+  const router = useRouter();
+  const user = useAuth();
   // upload image to firebase storage with randomized name
   const [imageUpload, setImageUpload] = useState(null);
-  const uploadImage = () => {
-    if (imageUpload == null) return;
-    const imageRef = ref(storage, `server-icons/${imageUpload.name + v4()}`);
-    uploadBytes(imageRef, imageUpload).then(() => {
+  // const [imageUrl, setImageUrl] = useState(null);
+  let imageUrl = null;
+
+  const uploadImage = async () => {
+    if (imageUpload == null) {
+      console.log('no image found')
+      return;
+    }
+    imageUrl = `server-icons/${imageUpload.name + v4()}`;
+    const imageRef = ref(storage, imageUrl);
+    await uploadBytes(imageRef, imageUpload).then(() => {
       // after uploading, run this
-      alert('image uploaded.')
+      console.log('image uploaded.');
     })
   };
+
+  const createServer = async (id, name, image) => {
+    // 'servers' collection
+    const dataServers = {
+      imageUrl: image,
+      inviteCode: v4(),
+      name: name,
+    };
+    await setDoc(doc(db, "servers", id), dataServers);
+
+    // 'serverMembers' collection
+    const dataServerMembers = {
+      [user.uid]: {
+        joined: true,
+        joinedAt: serverTimestamp(),
+        role: 'owner',
+      }
+    };
+    await setDoc(doc(db, "serverMembers", id), dataServerMembers);
+
+    // 'users' collection
+    await updateDoc(doc(db, "users", user.uid), {
+      [`servers.${id}`]: true
+    });
+
+    // 'channels' collection
+
+    // 'serverChannels' collection
+
+
+  }
 
   // useModalStore hook
   const { isOpen, onClose, type } = useModal();
@@ -64,7 +105,7 @@ const InitialModal = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      imageUrl: "",
+      image: "",
     }
   });
 
@@ -72,7 +113,17 @@ const InitialModal = () => {
   // run this when submitting the form
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log(values);
-    uploadImage();
+    await uploadImage();
+
+    const id = "server" + v4();
+    const name = values.name;
+    await createServer(id, name, imageUrl);
+
+    alert('successfully created server');
+    
+    handleClose();
+
+    router.reload();
   }
 
   return (
@@ -92,8 +143,8 @@ const InitialModal = () => {
                   </div>
                   <FormField 
                     control={form.control}
-                    name="imageUrl"
-                    render={({ field: {value, onChange, ...fieldProps } }) => (
+                    name="image"
+                    render={({ field: {value, onChange, ...fieldProps} }) => (
                       <FormItem>
                         <FormLabel className='text-xs font-semibold text-primary'>
                           SERVER ICON
@@ -104,7 +155,8 @@ const InitialModal = () => {
                             onChange={(event) => {
                               if (event.target.files && event.target.files[0]) {
                                 setImageUpload(event.target.files[0]);
-                                // console.log('File selected:', event.target.files[0]);
+                                onChange(event.target.files);
+                                console.log('File selected:', event.target.files[0]);
                             }
                             }}
                             disabled={isLoading}

@@ -54,6 +54,7 @@ export default function HomePage() {
                     Go to register page
                 </Link>
                 <SignoutButton />
+
             </div>
         </React.Fragment>
     );
