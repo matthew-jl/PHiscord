@@ -13,6 +13,7 @@ import { doc, getDoc } from '@firebase/firestore';
 import { db, storage } from '@/lib/firebaseConfig';
 import { useRouter } from 'next/router';
 import { getDownloadURL, ref } from 'firebase/storage';
+import Loading from './Loading';
 
 const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
   const { onOpen } = useModal();
@@ -20,9 +21,13 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
   const [servers, setServers] = useState([]);
   const router = useRouter();
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     const fetchServers = async () => {
       if (!user) return;
+
+      setIsLoading(true);
 
       // Fetch user data
       const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -50,57 +55,67 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
       serverData = serverData.sort((a, b) => a.name.localeCompare(b.name));
 
       setServers(serverData);
+
+      setIsLoading(false);
     };
 
     fetchServers();
   }, [user]);
 
   return (
-    // sidebar background
-    <div className="fixed top-0 left-0 h-screen w-16 bg-dc-900 text-primary shadow-md flex flex-col" suppressHydrationWarning>
+    <>
+      { isLoading ? (
+        <Loading /> 
+      ) : (
+      // sidebar background
+      <div className="fixed top-0 left-0 h-screen w-16 bg-dc-900 text-primary shadow-md flex flex-col z-50" suppressHydrationWarning>
 
-      <div className="flex flex-col items-center">
-        <SidebarIconTheme icon= { <ModeToggle/> } tooltip="Change Theme"/>
-        <SidebarIconDM icon={ 
-          <ThemeImage srcLight="\images\discord-mark-black.png" srcDark='\images\discord-mark-white.png' alt="discord mark" width="27" height="27"/>
-        } tooltip="Direct Messages"/>
-        <Separator className="h-[2px] bg-dc-600 my-1 w-11 rounded-lg"/>
-      </div>
-
-      {/* scroll area for sidebar (has to be a fixed height to work) */}
-      <ScrollArea className="h-fit w-full">
-        {/* center scroll area items */}
-        <div className='flex flex-col items-center'>
-
-            {/* Print each server the user is in as a sidebar icon */}
-            {servers.map((server) => (
-              <SidebarIcon
-                key={server.id}
-                icon={<img src={server.imageDownloadUrl} alt={server.name} />}
-                tooltip={server.name}
-                onClick={() => router.push(`/servers/${server.id}/serverPage`)}
-                active={activeServerId === server.id}
-              />
-            ))}
-
-            <SidebarIcon icon={ <IoMdAdd size="27"/> } tooltip="Add a Server" onClick={() => onOpen('createServer')}/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-            test
+        <div className="flex flex-col items-center">
+          <SidebarIconTheme icon= { <ModeToggle/> } tooltip="Change Theme"/>
+          <SidebarIconDM icon={ 
+            <ThemeImage srcLight="\images\discord-mark-black.png" srcDark='\images\discord-mark-white.png' alt="discord mark" width="27" height="27"/>
+          } tooltip="Direct Messages"/>
+          <Separator className="h-[2px] bg-dc-600 my-1 w-11 rounded-lg"/>
         </div>
-      </ScrollArea>
 
-    </div>
+        {/* scroll area for sidebar (has to be a fixed height to work) */}
+        <ScrollArea className="h-fit w-full">
+          {/* center scroll area items */}
+          <div className='flex flex-col items-center'>
+
+              {/* Print each server the user is in as a sidebar icon */}
+              {servers.map((server) => (
+                <SidebarIcon
+                  key={server.id}
+                  icon={<img src={server.imageDownloadUrl} alt={server.name} />}
+                  tooltip={server.name}
+                  onClick={() => router.push(`/servers/${server.id}/serverPage`)}
+                  active={activeServerId === server.id}
+                />
+              ))}
+
+              <SidebarIcon icon={ <IoMdAdd size="27"/> } tooltip="Add a Server" onClick={() => onOpen('createServer')}/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+
+              {/* Just to test scroll area */}
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
+              test
+          </div>
+        </ScrollArea>
+
+      </div>
+      )}
+    </>
   )
 }
 

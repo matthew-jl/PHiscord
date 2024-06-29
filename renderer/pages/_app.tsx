@@ -12,14 +12,14 @@ const font = Open_Sans({ subsets: ['latin'] })
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
-      <Layout>
-        <main className={font.className}>
-          <ThemeProvider attribute="class" defaultTheme='dark' enableSystem={false} storageKey='discord-theme'>
-            <ModalProvider />
-            <Component {...pageProps} />
-          </ThemeProvider>
-        </main>
-      </Layout>
+        <Layout>
+          <main className={font.className}>
+            <ThemeProvider attribute="class" defaultTheme='dark' enableSystem={false} storageKey='discord-theme'>
+                  <ModalProvider />
+                  <Component {...pageProps} />
+            </ThemeProvider>
+          </main>
+        </Layout>
     </>
   )
 

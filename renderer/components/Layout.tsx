@@ -2,9 +2,12 @@
 import useAuth from '@/lib/hooks/useAuth';
 import Head from 'next/head'
 import { useRouter } from 'next/router';
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
+import Loading from '@/components/Loading';
 
 const Layout = ({ children }: { children: React.ReactElement }) => {
+
+    const [isLoading, setIsLoading] = useState(true);
 
     const router = useRouter();
     const isAuthenticated = useAuth();
@@ -19,7 +22,7 @@ const Layout = ({ children }: { children: React.ReactElement }) => {
     if (!isAuthenticated && !isAuthPage) {
         router.push('/login');
     }
-}, [isAuthenticated, isAuthPage, router]);
+  }, [isAuthenticated, isAuthPage, router]);
 
   if (isAuthenticated || isAuthPage) {
       return (
@@ -31,7 +34,9 @@ const Layout = ({ children }: { children: React.ReactElement }) => {
         </>
       )
   } else {
-    return null; // loading screen/spinner
+    return (
+      <Loading />
+    ); // loading screen/spinner
   }
 }
 

@@ -16,10 +16,12 @@ export default function HomePage() {
 
     const user = useAuth();
     const [userData, setUserData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     // have to use useEffect because fetching data is an asynchronous operation
     useEffect(() => {
         const fetchUserData = async () => {
+            setIsLoading(true);
             // If user is logged in,
             if (user) {
                 // Read data from "users" collection in Cloud Firestore database
@@ -33,6 +35,7 @@ export default function HomePage() {
                     console.log("Current user undefined.")
                 }
             }
+            setIsLoading(false);
         };
         fetchUserData();
     }, [user]);
