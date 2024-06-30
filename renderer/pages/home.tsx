@@ -11,6 +11,7 @@ import useAuth from "@/lib/hooks/useAuth";
 import { doc, getDoc } from "@firebase/firestore";
 import { db } from "@/lib/firebaseConfig";
 import InitialModal from "@/components/modals/initial-modal";
+import Loading from "@/components/Loading";
 
 export default function HomePage() {
 
@@ -42,23 +43,29 @@ export default function HomePage() {
 
     return (
         <React.Fragment>
+            { isLoading ? (
+                <Loading />
+            ) : (
+            <>
             <Sidebar />
-            <div className="w-full h-screen flex justify-center pl-16">
-                {/* conditional rendering if userData exists (user logged in) */}
-                {userData && <p>Hello, {userData.username}</p>}
+                <div className="w-full h-screen flex justify-center pl-16">
+                    {/* conditional rendering if userData exists (user logged in) */}
+                    {userData && <p>Hello, {userData.username}</p>}
 
-                <Link href="/next" className={buttonVariants()}>
-                    Go to next page
-                </Link>
-                <Link href="/login" className={buttonVariants()}>
-                    Go to login page
-                </Link>
-                <Link href="/register" className={buttonVariants()}>
-                    Go to register page
-                </Link>
-                <SignoutButton />
-
-            </div>
+                    <Link href="/next" className={buttonVariants()}>
+                        Go to next page
+                    </Link>
+                    <Link href="/login" className={buttonVariants()}>
+                        Go to login page
+                    </Link>
+                    <Link href="/register" className={buttonVariants()}>
+                        Go to register page
+                    </Link>
+                    <SignoutButton />
+                    <Link href="http://localhost:8888/invite/f8497110-be89-4dd5-9954-24da586002be/InviteCodePage" className="hover:underline">test</Link>
+                </div>
+            </>
+            )}
         </React.Fragment>
     );
 

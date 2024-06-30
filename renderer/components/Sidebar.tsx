@@ -89,7 +89,7 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
                   key={server.id}
                   icon={<img src={server.imageDownloadUrl} alt={server.name} />}
                   tooltip={server.name}
-                  onClick={() => router.push(`/servers/${server.id}/serverPage`)}
+                  onClick={() => router.push(`/servers/${server.id}/ServerPage`)}
                   active={activeServerId === server.id}
                 />
               ))}

@@ -1,13 +1,14 @@
 import Loading from '@/components/Loading';
 import ServerSidebar from '@/components/ServerSidebar';
 import Sidebar from '@/components/Sidebar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { db } from '@/lib/firebaseConfig';
 import useAuth from '@/lib/hooks/useAuth';
 import { collection, doc, getDoc, query } from '@firebase/firestore';
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 
-const serverPage = () => {
+const ServerPage = () => {
     const user = useAuth();
     const router = useRouter();
     const { serverId } = router.query;
@@ -80,16 +81,37 @@ const serverPage = () => {
                 ) : (
                     <div className="w-full h-screen flex pl-16 relative bg-red-900">
                         <ServerSidebar 
+                            activeServerId = { activeServerId }
                             serverData={ serverData } 
                             serverMemberData = { serverMemberData } 
                             usersData = { usersData }
                             currentUserRole = { currentUserRole }    
                         />
-                        <div className="w-full ml-60 bg-dc-700">This is { serverData?.name }</div>
+                        <div className="grow h-screen mx-60 bg-dc-700 flex flex-col">
+                            <div className='w-full min-h-12 shadow-md font-semibold flex items-center text-sm text-left'>
+                                <div className='grow pl-4'>channel placeholder</div>
+                            </div>
+                            <ScrollArea className='h-full'>
+                                This is { serverData?.name }
+                                <div className='flex flex-col space-y-20'>
+                                    <p>placeholder</p>
+                                    <p>placeholder</p>
+                                    <p>placeholder</p>
+                                    <p>placeholder</p>
+                                    <p>placeholder</p>
+                                    <p>placeholder</p>
+                                    <p>placeholder</p>
+                                    <p>placeholder</p>
+                                    <p>placeholder</p>
+                                    <p>placeholder</p>
+                                    <p>placeholder2</p>
+                                </div>
+                            </ScrollArea>
+                        </div>
                     </div> 
                 )}
         </>
     )
 }
 
-export default serverPage
+export default ServerPage
