@@ -1,5 +1,5 @@
 'use client';
-import useAuth from '@/lib/hooks/useAuth';
+import { useAuthWithLoading } from '@/lib/hooks/useAuth';
 import Head from 'next/head'
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react'
@@ -7,10 +7,10 @@ import Loading from '@/components/Loading';
 
 const Layout = ({ children }: { children: React.ReactElement }) => {
 
-    const [isLoading, setIsLoading] = useState(true);
+    // const [isLoading, setIsLoading] = useState(true);
 
     const router = useRouter();
-    const isAuthenticated = useAuth();
+    const { user, isLoading } = useAuthWithLoading();
   
   // So that non-logged-in user can access login and register page
   const noAuthRequired = ['/login', '/register'];
@@ -19,12 +19,20 @@ const Layout = ({ children }: { children: React.ReactElement }) => {
   // workaround for next/router can't be used in server-side.
   // use effects are always client-side.
   useEffect(() => {
-    if (!isAuthenticated && !isAuthPage) {
-        router.push('/login');
+    if (!isLoading) {
+      if (!user && !isAuthPage) {
+          router.push('/login');
+      }
     }
-  }, [isAuthenticated, isAuthPage, router]);
+  }, [user, isLoading, isAuthPage, router]);
 
-  if (isAuthenticated || isAuthPage) {
+  if (isLoading) {
+    return (
+      < Loading />
+    )
+  }
+
+  if (user || isAuthPage) {
       return (
         <>
             <Head>

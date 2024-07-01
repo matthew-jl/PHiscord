@@ -1,16 +1,22 @@
 import Link from 'next/link'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { auth } from '../lib/firebaseConfig'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { useRouter } from 'next/router'
-import useAuth from '@/lib/hooks/useAuth'
+import { useAuth } from '@/lib/hooks/useAuth'
 import { ModeToggle } from '@/components/mode-toggle'
 import { Button } from '@/components/ui/button'
 
 const LoginPage = () => {
 
-    const router = useRouter();
     const isAuthenticated = useAuth();
+    const router = useRouter();
+    // const [isLoading, setIsLoading] = useState(true);
+
+    // useEffect(() => {
+
+    // })
+
     if (isAuthenticated) {
         router.push('/home');
     }

@@ -7,7 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import Sidebar from "@/components/Sidebar";
 import SignoutButton from "@/components/SignoutButton";
 
-import useAuth from "@/lib/hooks/useAuth";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { doc, getDoc } from "@firebase/firestore";
 import { db } from "@/lib/firebaseConfig";
 import InitialModal from "@/components/modals/initial-modal";
@@ -62,7 +62,8 @@ export default function HomePage() {
                         Go to register page
                     </Link>
                     <SignoutButton />
-                    <Link href="http://localhost:8888/invite/f8497110-be89-4dd5-9954-24da586002be/InviteCodePage" className="hover:underline">test</Link>
+                    <Link href="http://localhost:8888/invite/aab957cc-27f4-41e8-aab6-fc65ec0d8cd0/InviteCodePage" className="hover:underline">test</Link>
+                    <Link href="http://localhost:8888/servers/f8497110-be89-4dd5-9954-24da586002be/ServerPage" className="hover:underline">try to hack</Link>
                 </div>
             </>
             )}

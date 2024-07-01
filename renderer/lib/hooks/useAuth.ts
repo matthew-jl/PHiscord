@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { auth } from "../firebaseConfig";
 
 function useAuth() {
-    const [user, setLocalUser] = useState<any | null>(null);
+    const [user, setLocalUser] = useState<any | undefined>(undefined);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user: any) => {
@@ -21,4 +21,17 @@ function useAuth() {
     return user;
 }
 
-export default useAuth;
+function useAuthWithLoading() {
+    const [isLoading, setIsLoading] = useState(true);
+    const user = useAuth();
+
+    useEffect(() => {
+        if (user !== undefined) {
+            setIsLoading(false); // Stop loading when user is defined (either user object or null)
+        }
+    }, [user]);
+
+    return { user, isLoading };
+}
+
+export { useAuth, useAuthWithLoading };

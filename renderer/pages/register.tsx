@@ -1,7 +1,7 @@
 import { ModeToggle } from '@/components/mode-toggle';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebaseConfig';
-import useAuth from '@/lib/hooks/useAuth';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { collection, doc, setDoc } from '@firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link'

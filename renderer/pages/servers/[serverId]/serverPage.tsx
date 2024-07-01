@@ -3,7 +3,7 @@ import ServerSidebar from '@/components/ServerSidebar';
 import Sidebar from '@/components/Sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { db } from '@/lib/firebaseConfig';
-import useAuth from '@/lib/hooks/useAuth';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { collection, doc, getDoc, query } from '@firebase/firestore';
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
@@ -24,8 +24,24 @@ const ServerPage = () => {
     useEffect(() => {
         const fetchServerData = async () => {
             if (activeServerId && user) {
-                // servers
                 setIsLoading(true);
+                // if user is not part of server, then redirect to home
+                const userRef = doc(db, 'users', user.uid);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    if (!Object.keys(userSnap.data()).includes('servers')) {
+                        console.log('you are not a member of any server');
+                        router.push('/home');
+                        return;
+                    }
+                    if (!userSnap.data().servers[activeServerId]) {
+                        console.log('you are not a member of this server');
+                        router.push('/home');
+                        return;
+                    }
+                }
+
+                // servers
                 const serverRef = doc(db, 'servers', activeServerId);
                 const serverSnap = await getDoc(serverRef);
                 if (serverSnap.exists()) {

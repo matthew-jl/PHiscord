@@ -28,7 +28,7 @@ import { db, storage } from '@/lib/firebaseConfig'
 import { ref, uploadBytes } from 'firebase/storage'
 import { v4 } from 'uuid'
 import { Timestamp, doc, serverTimestamp, setDoc, updateDoc } from '@firebase/firestore'
-import useAuth from '@/lib/hooks/useAuth'
+import { useAuth } from '@/lib/hooks/useAuth'
 import { useRouter } from 'next/router'
 
 // make a schema using zod for the form

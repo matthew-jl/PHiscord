@@ -8,7 +8,7 @@ import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from './ui/tooltip';
 import { useModal } from '@/lib/hooks/useModalStore';
-import useAuth from '@/lib/hooks/useAuth';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { doc, getDoc } from '@firebase/firestore';
 import { db, storage } from '@/lib/firebaseConfig';
 import { useRouter } from 'next/router';

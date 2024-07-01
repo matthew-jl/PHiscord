@@ -1,25 +1,92 @@
-import useAuth from '@/lib/hooks/useAuth';
+import Loading from '@/components/Loading';
+import { db } from '@/lib/firebaseConfig';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from '@firebase/firestore';
 import { useRouter } from 'next/router';
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 const InviteCodePage = () => {
     const user = useAuth();
     const router = useRouter();
     const { inviteCode } = router.query;
-    const activeInviteCode = Array.isArray(inviteCode) ? inviteCode[0] : inviteCode;
+    const activeInviteCode = Array.isArray(inviteCode) ? inviteCode[0] : inviteCode; // just to convert it to string
 
-    // find server and get server data
+    const [isLoading, setIsLoading] = useState(true);
 
-    // if already joined, redirect to server page
+    useEffect(() => {
+      const joinServer = async () => {
+        if (!user) {
+          console.log('no user logged in');
+          return;
+        }
+        setIsLoading(true);
 
-    // create new serverMember
+        // find server and get server data
+        const serverRef = collection(db, 'servers');
+        const serverQuery = query(serverRef, where('inviteCode', '==', activeInviteCode));
+        const serverQuerySnap = await getDocs(serverQuery);
+        if (serverQuerySnap.empty) {
+          console.log('server not found through invite code');
+          setIsLoading(false);
+          return;
+        }
+        let serverId, serverData;
+        serverQuerySnap.forEach((doc) => {
+          serverId = doc.id;
+          serverData = doc.data();
+        });
+        console.log(serverId, serverData);
 
-    // update user's server to true
+        // if already joined, redirect to server page
+        const serverMemberRef = doc(db, 'serverMembers', serverId);
+        const serverMemberSnap = await getDoc(serverMemberRef);
+        if (!serverMemberSnap.exists) {
+          console.log('serverMember not found');
+          setIsLoading(false);
+          return;
+        }
+        if (serverMemberSnap.data()[user.uid]) {
+          console.log('you are already a member of this server.');
+          router.push(`/servers/${serverId}/ServerPage`);
+          setIsLoading(false);
+          return;
+        }
+        
+        // create new serverMember
+        await updateDoc(serverMemberRef, {
+          [user.uid]: {
+            joined: true,
+            joinedAt: serverTimestamp(),
+            role: 'member',
+          }
+        });
+        console.log('created serverMember')
 
-    // redirect to server page
+        // update user's server to true
+        await updateDoc(doc(db, 'users', user.uid), {
+          [`servers.${serverId}`]: true
+        });
+        console.log('updated users')
+
+        // redirect to server page
+        router.push(`/servers/${serverId}/ServerPage`);
+        setIsLoading(false);
+
+      };
+      joinServer();
+    }, [user]);
+
+
+    
 
   return (
-    <div>InvitePage</div>
+    <>
+      { isLoading ? (
+        <Loading /> 
+      ) : (
+        <div>InvitePage</div>
+      ) }
+    </>
   )
 }
 

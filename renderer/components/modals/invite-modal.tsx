@@ -14,7 +14,7 @@ import { TbCopy } from "react-icons/tb";
 import { TbCopyCheck } from "react-icons/tb";
 
 import { useModal } from '@/lib/hooks/useModalStore'
-import useAuth from '@/lib/hooks/useAuth'
+import { useAuth } from '@/lib/hooks/useAuth'
 import { Label } from '../ui/label'
 import useOrigin from '@/lib/hooks/useOrigin';
 
@@ -61,6 +61,7 @@ const InviteModal = () => {
               <Input 
                 className='bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0'
                 value={ inviteUrl }
+                readOnly
               />
               
                 {copied ? 
