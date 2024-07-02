@@ -14,6 +14,7 @@ import { db, storage } from '@/lib/firebaseConfig';
 import { useRouter } from 'next/router';
 import { getDownloadURL, ref } from 'firebase/storage';
 import Loading from './Loading';
+import Link from 'next/link';
 
 const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
   const { onOpen } = useModal();
@@ -71,6 +72,7 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
       <div className="fixed top-0 left-0 h-screen w-16 bg-dc-900 text-primary shadow-md flex flex-col z-50" suppressHydrationWarning>
 
         <div className="flex flex-col items-center">
+          <Link href='/home'>home</Link>
           <SidebarIconTheme icon= { <ModeToggle/> } tooltip="Change Theme"/>
           <SidebarIconDM icon={ 
             <ThemeImage srcLight="\images\discord-mark-black.png" srcDark='\images\discord-mark-white.png' alt="discord mark" width="27" height="27"/>

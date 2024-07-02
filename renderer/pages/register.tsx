@@ -33,6 +33,7 @@ const registerPage = () => {
             const data = {
                 email: user.email,
                 username: username,
+                imageUrl: 'user-icons/profile-picture-placeholder-yellow.png',
             }
             await setDoc(doc(db, "users", user.uid), data);
 

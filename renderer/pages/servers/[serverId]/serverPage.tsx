@@ -1,10 +1,12 @@
 import Loading from '@/components/Loading';
 import ServerSidebar from '@/components/ServerSidebar';
 import Sidebar from '@/components/Sidebar';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { db } from '@/lib/firebaseConfig';
+import { db, storage } from '@/lib/firebaseConfig';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { collection, doc, getDoc, query } from '@firebase/firestore';
+import { getDownloadURL, ref } from 'firebase/storage';
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 
@@ -67,6 +69,10 @@ const ServerPage = () => {
                         const userRef = doc(db, 'users', userId);
                         const userSnap = await getDoc(userRef);
                         if (userSnap.exists()) {
+                            if (Object.keys(userSnap.data()).includes('imageUrl')) {
+                                const imageDownloadUrl = await getDownloadURL(ref(storage, userSnap.data().imageUrl));
+                                return { uid: userId, imageDownloadUrl, ...userSnap.data() };
+                            }
                             return { uid: userId, ...userSnap.data() };
                         } else {
                             console.log(`Failed to fetch user data for user ID: ${userId}`);
@@ -97,7 +103,6 @@ const ServerPage = () => {
                 ) : (
                     <div className="w-full h-screen flex pl-16 relative bg-red-900">
                         <ServerSidebar 
-                            activeServerId = { activeServerId }
                             serverData={ serverData } 
                             serverMemberData = { serverMemberData } 
                             usersData = { usersData }
@@ -123,6 +128,9 @@ const ServerPage = () => {
                                     <p>placeholder2</p>
                                 </div>
                             </ScrollArea>
+                            <div className='w-full h-fit px-4 pb-4 pt-2'>
+                                <Input className='bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0' placeholder='Message here...' />
+                            </div>
                         </div>
                     </div> 
                 )}
