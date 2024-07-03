@@ -1,8 +1,10 @@
 import React from 'react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { RiArrowDropDownLine } from "react-icons/ri";
-import { IoMdPersonAdd } from "react-icons/io";
-import { IoChatbubbleEllipses } from "react-icons/io5";
+import { IoMdAddCircle, IoMdPersonAdd } from "react-icons/io";
+import { IoChatbubbleEllipses, IoSettingsSharp } from "react-icons/io5";
+import { ImExit } from "react-icons/im";
+import { MdDelete } from "react-icons/md";
 import { HiMiniSpeakerWave } from "react-icons/hi2";
 import { ScrollArea } from './ui/scroll-area';
 import { useModal } from '@/lib/hooks/useModalStore';
@@ -16,9 +18,11 @@ type serverSidebarProps = {
     serverMemberData: any,
     usersData: any,
     currentUserRole: string,
+    channelData: any,
+    serverChannelData: any
 }
 
-const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRole }: serverSidebarProps) => {
+const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRole, channelData, serverChannelData }: serverSidebarProps) => {
 
     const { onOpen } = useModal();
 
@@ -49,6 +53,23 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
             }
         }
     });
+    const textChannelList = [];
+    const voiceChannelList = [];
+    Object.keys(serverChannelData).forEach((channelId) => {
+        const data = channelData.find(channel => channel.id === channelId );
+        if (data) {
+            switch (data.type) {
+                case 'text':
+                    textChannelList.push(data);
+                    break;
+                case 'voice':
+                    voiceChannelList.push(data);
+                    break;
+                default:
+                    break;
+            }
+        }
+    });
 
   return (
     <>
@@ -66,23 +87,49 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <IoMdPersonAdd className='ml-auto'/>
                     </DropdownMenuItem>
                     { isAdmin && (
-                        <DropdownMenuItem>Server Settings</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onOpen('editServer')}>
+                            Server Settings
+                            <IoSettingsSharp className='ml-auto' />
+                        </DropdownMenuItem>
                     )}
                     { isAdmin && (
-                        <DropdownMenuItem>Create Channel</DropdownMenuItem>
+                        <DropdownMenuItem>
+                            Create Channel
+                            <IoMdAddCircle className='ml-auto' />
+                        </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className='text-red-500'>Leave Server</DropdownMenuItem>
+                    <DropdownMenuItem className='text-red-500'>
+                        Leave Server
+                        <ImExit className='ml-auto' />
+                    </DropdownMenuItem>
                     { isOwner && (
-                        <DropdownMenuItem className='text-red-500'>Delete Server</DropdownMenuItem>
+                        <DropdownMenuItem className='text-red-500'>
+                            Delete Server
+                            <MdDelete className='ml-auto'/>
+                        </DropdownMenuItem>
                     )}
                 </DropdownMenuContent>
             </DropdownMenu>
             {/* Channels */}
             <ScrollArea className='h-full pb-12'>
-                <div className='flex flex-col px-2 py-3 space-y-2'>
-                    <ChannelItem name='channel1' type='text'/>
-                    <ChannelItem name='channelvo' type='voice'/>
+                <div className='flex flex-col px-2 py-3 space-y-4'>
+                    { textChannelList.length > 0 && (
+                        <div className='space-y-1'>
+                            <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>text channels</p>
+                            { textChannelList.map((channel) => (
+                                <ChannelItem name={ channel.name } type={ channel.type } key={ channel.id }/>
+                            ))}
+                        </div>
+                    )}
+                    { voiceChannelList.length > 0 && (
+                        <div className='space-y-1'>
+                            <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>voice channels</p>
+                            { voiceChannelList.map((channel) => (
+                                <ChannelItem name={ channel.name } type={ channel.type } key={ channel.id }/>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </ScrollArea>
         </div>
@@ -95,7 +142,7 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>owner</p>
                             {ownerList.map((user) => (
-                                <MemberItem username={ user.username } icon={ user.imageDownloadUrl }/>
+                                <MemberItem username={ user.username } icon={ user.imageDownloadUrl } key={ user.uid }/>
                             ))}
                         </div>
                     )}
@@ -103,7 +150,7 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>admin</p>
                             {adminList.map((user) => (
-                                <MemberItem username={ user.username }/>
+                                <MemberItem username={ user.username } key={ user.uid }/>
                             ))}
                         </div>
                     )}
@@ -111,7 +158,7 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>member</p>
                             {memberList.map((user) => (
-                                <MemberItem username={ user.username }/>
+                                <MemberItem username={ user.username } key={ user.uid }/>
                             ))}
                         </div>
                     )}

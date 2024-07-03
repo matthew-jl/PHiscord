@@ -23,6 +23,10 @@ const ServerPage = () => {
     const [serverData, setServerData] = useState(null);
     const [serverMemberData, setServerMemberData] = useState(null);
     const [usersData, setUsersData] = useState(null);
+    // 'serverChannels' and 'channels'
+    const [serverChannelData, setServerChannelData] = useState(null);
+    const [channelData, setChannelData] = useState([]);
+
     useEffect(() => {
         const fetchServerData = async () => {
             if (activeServerId && user) {
@@ -88,6 +92,30 @@ const ServerPage = () => {
                 }
 
                 // serverChannels
+                const serverChannelsRef = doc(db, 'serverChannels', activeServerId);
+                const serverChannelsSnap = await getDoc(serverChannelsRef);
+                if (serverChannelsSnap.exists()) {
+                    setServerChannelData(serverChannelsSnap.data());
+                    console.log(serverChannelsSnap.data());
+
+                    //channels
+                    const channelPromises = Object.keys(serverChannelsSnap.data()).map(async (channelId) => {
+                        const channelRef = doc(db, 'channels', channelId);
+                        const channelSnap = await getDoc(channelRef);
+                        if (channelSnap.exists()) {
+                            return { id: channelId, ...channelSnap.data() };
+                        } else {
+                            console.log(`Failed to fetch channel data for channel ID: ${channelId}`);
+                            return null;
+                        }
+                    });
+
+                    const channels = await Promise.all(channelPromises);
+                    setChannelData(channels.filter(channel => channel !== null));
+                    console.log(channels);
+                } else {
+                    console.log('failed to fetch serverChannels data');
+                }
 
                 setIsLoading(false);
             }
@@ -106,7 +134,9 @@ const ServerPage = () => {
                             serverData={ serverData } 
                             serverMemberData = { serverMemberData } 
                             usersData = { usersData }
-                            currentUserRole = { currentUserRole }    
+                            currentUserRole = { currentUserRole }
+                            serverChannelData = { serverChannelData } 
+                            channelData = { channelData }   
                         />
                         <div className="grow h-screen mx-60 bg-dc-700 flex flex-col">
                             <div className='w-full min-h-12 shadow-md font-semibold flex items-center text-sm text-left'>

@@ -47,6 +47,9 @@ const InitialModal = () => {
   // const [imageUrl, setImageUrl] = useState(null);
   let imageUrl = null;
 
+  // for previewing the server icon
+  const [imagePreview, setImagePreview] = useState(null);
+
   const uploadImage = async () => {
     if (imageUpload == null) {
       console.log('no image found')
@@ -85,9 +88,30 @@ const InitialModal = () => {
     });
 
     // 'channels' collection
+    // default general text channel and voice channel
+    let channelIdText = 'channel' + v4();
+    let channelIdVoice = 'channel' + v4();
+    const dataChannelsText = {
+        name: 'general',
+        server: id,
+        lastMessageTimestamp: null,
+        type: 'text',
+    }
+    const dataChannelsVoice = {
+        name: 'General',
+        server: id,
+        lastMessageTimestamp: null,
+        type: 'voice',
+    }
+    await setDoc(doc(db, 'channels', channelIdText), dataChannelsText);
+    await setDoc(doc(db, 'channels', channelIdVoice), dataChannelsVoice);
 
     // 'serverChannels' collection
-
+    const dataServerChannels = {
+      [channelIdText]: true,
+      [channelIdVoice]: true,
+    }
+    await setDoc(doc(db, 'serverChannels', id), dataServerChannels);
 
   }
 
@@ -97,6 +121,7 @@ const InitialModal = () => {
 
   const handleClose = () => {
     form.reset();
+    setImagePreview(null);
     onClose();
   }
 
@@ -139,7 +164,10 @@ const InitialModal = () => {
               <form onSubmit={ form.handleSubmit(onSubmit) } className='space-y-7'>
                 <div className='space-y-2'>
                   <div className='flex items-center justify-center text-center'>
-                    TODO: DISPLAY CHOSEN IMAGE
+                    {/* DISPLAY CHOSEN IMAGE */}
+                    {imagePreview && (
+                      <img src={imagePreview} alt="imagePreview" className='w-24 h-24 rounded-full' />
+                    )}
                   </div>
                   <FormField 
                     control={form.control}
@@ -157,6 +185,7 @@ const InitialModal = () => {
                                 setImageUpload(event.target.files[0]);
                                 onChange(event.target.files);
                                 console.log('File selected:', event.target.files[0]);
+                                setImagePreview(URL.createObjectURL(event.target.files[0]));
                             }
                             }}
                             disabled={isLoading}
