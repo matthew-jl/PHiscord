@@ -1,7 +1,7 @@
 import React, { ReactNode, useEffect, useState } from 'react'
 import { IconType } from 'react-icons'
 import { IoMdAdd } from "react-icons/io"
-import { FaCompass } from "react-icons/fa";
+import { FaCompass, FaHeadphonesAlt, FaMicrophone } from "react-icons/fa";
 import { ModeToggle } from './mode-toggle';
 import ThemeImage from './theme-image';
 import { Separator } from './ui/separator';
@@ -15,11 +15,14 @@ import { useRouter } from 'next/router';
 import { getDownloadURL, ref } from 'firebase/storage';
 import Loading from './Loading';
 import Link from 'next/link';
+import { IoSettingsSharp } from 'react-icons/io5';
 
 const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
   const { onOpen } = useModal();
   const user = useAuth();
   const [servers, setServers] = useState([]);
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [userData, setUserData] = useState(null);
   const router = useRouter();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -32,9 +35,18 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
 
       // Fetch user data
       const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (!userDoc.exists()) return;
+      if (!userDoc.exists()) {
+        console.log('failed to fetch user data');
+        return;
+      }
 
       const userData = userDoc.data();
+      setUserData(userData);
+
+      // Profile picture URL
+      const profilePictureUrl = await getDownloadURL(ref(storage, userData.imageUrl));
+      setProfilePicture(profilePictureUrl);
+
       const userServers = userData.servers || {};
 
       // Fetch server details
@@ -68,7 +80,8 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
       { isLoading ? (
         <Loading /> 
       ) : (
-      // sidebar background
+      <>
+      {/* sidebar background */}
       <div className="fixed top-0 left-0 h-screen w-16 bg-dc-900 text-primary shadow-md flex flex-col z-50" suppressHydrationWarning>
 
         <div className="flex flex-col items-center">
@@ -114,8 +127,18 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
               test
           </div>
         </ScrollArea>
-
       </div>
+      {/* User Status Bar */}
+      <div className='fixed bottom-0 left-16 w-60 h-12 bg-dc-900 z-40 flex items-center px-2'>
+              <div className='w-8 h-8 rounded-full overflow-hidden'>
+                <img src={ profilePicture } alt="Profile pic" />
+              </div>
+              <span className='text-sm pl-2'>{ userData.username }</span>
+              <FaMicrophone size={16} className='mx-2 ml-auto'/>
+              <FaHeadphonesAlt size={16} className='mx-1'/>
+              <IoSettingsSharp size={16} className='mx-2'/>
+      </div>
+      </>
       )}
     </>
   )

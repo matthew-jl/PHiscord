@@ -8,6 +8,7 @@ import { MdDelete } from "react-icons/md";
 import { HiMiniSpeakerWave } from "react-icons/hi2";
 import { ScrollArea } from './ui/scroll-area';
 import { useModal } from '@/lib/hooks/useModalStore';
+import { FaUsersCog } from 'react-icons/fa';
 
 // interface ServerData {
 //     name: string,
@@ -33,7 +34,6 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
     const ownerList = [];
     const adminList = [];
     const memberList = [];
-
     Object.keys(serverMemberData).forEach((userId) => {
         const memberData = serverMemberData[userId];
         const userData = usersData.find(user => user.uid === userId);
@@ -53,6 +53,15 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
             }
         }
     });
+
+    // for passing to manage members modal
+    const membersByRole = {
+        self: currentUserRole,
+        ownerList: ownerList,
+        adminList: adminList,
+        memberList: memberList,
+    };
+
     const textChannelList = [];
     const voiceChannelList = [];
     Object.keys(serverChannelData).forEach((channelId) => {
@@ -90,6 +99,12 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <DropdownMenuItem onClick={() => onOpen('editServer')}>
                             Server Settings
                             <IoSettingsSharp className='ml-auto' />
+                        </DropdownMenuItem>
+                    )}
+                    { isAdmin && (
+                        <DropdownMenuItem onClick={() => onOpen('members', { membersByRole: membersByRole })}>
+                            Manage Members
+                            <FaUsersCog className='ml-auto' />
                         </DropdownMenuItem>
                     )}
                     { isAdmin && (
