@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { RiArrowDropDownLine } from "react-icons/ri";
 import { IoMdAddCircle, IoMdPersonAdd } from "react-icons/io";
@@ -9,6 +9,10 @@ import { HiMiniSpeakerWave } from "react-icons/hi2";
 import { ScrollArea } from './ui/scroll-area';
 import { useModal } from '@/lib/hooks/useModalStore';
 import { FaUsersCog } from 'react-icons/fa';
+import { useRouter } from 'next/router';
+import { deleteField, doc, getDoc, updateDoc } from '@firebase/firestore';
+import { db } from '@/lib/firebaseConfig';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 // interface ServerData {
 //     name: string,
@@ -24,8 +28,12 @@ type serverSidebarProps = {
 }
 
 const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRole, channelData, serverChannelData }: serverSidebarProps) => {
-
     const { onOpen } = useModal();
+    const user = useAuth();
+    const router = useRouter();
+
+    let { channelId } = router.query;
+    channelId = Array.isArray(channelId) ? channelId[0] : channelId;
 
     const isOwner = currentUserRole == 'owner';
     const isAdmin = isOwner || currentUserRole == 'admin';
@@ -80,6 +88,39 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
         }
     });
 
+    const serverId = serverData.id;
+    const onLeave = async (userId) => {
+        // setIsLoading(true);
+        try {
+            // Update serverMembers collection by deleting the field corresponding to server id
+            const serverMemberRef = doc(db, 'serverMembers', serverId);
+            if (serverMemberRef) {
+                await updateDoc(serverMemberRef, {
+                    [userId]: deleteField()
+                });
+                console.log(`User ${userId} removed from the serverMembers collection`);
+            }
+
+            // Update users collection
+            const userRef = doc(db, 'users', userId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                if (userData.servers && userData.servers[serverId]) {
+                    const updatedServers = { ...userData.servers };
+                    delete updatedServers[serverId];
+                    await updateDoc(userRef, { servers: updatedServers });
+                    console.log(`Server ID ${serverId} removed from user ${userId}'s servers field`);
+                }
+            }
+        } catch (error) {
+            console.error("Error leaving user: ", error);
+        } finally {
+            router.push('/home')
+            // setIsLoading(false);
+        }
+    };
+
   return (
     <>
         {/* Left Sidebar */}
@@ -114,10 +155,12 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className='text-red-500'>
-                        Leave Server
-                        <ImExit className='ml-auto' />
-                    </DropdownMenuItem>
+                    { !isOwner && user && (
+                        <DropdownMenuItem className='text-red-500' onClick={() => onLeave(user.uid)}>
+                            Leave Server
+                            <ImExit className='ml-auto' />
+                        </DropdownMenuItem>
+                    )}
                     { isOwner && (
                         <DropdownMenuItem className='text-red-500'>
                             Delete Server
@@ -133,7 +176,13 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>text channels</p>
                             { textChannelList.map((channel) => (
-                                <ChannelItem name={ channel.name } type={ channel.type } key={ channel.id }/>
+                                <ChannelItem 
+                                name={ channel.name } 
+                                type={ channel.type } 
+                                key={ channel.id } 
+                                onClick={() => router.push(`/servers/${serverId}/channels/${channel.id}/ChannelPage`)}
+                                active={channelId == channel.id}
+                                />
                             ))}
                         </div>
                     )}
@@ -206,10 +255,12 @@ const MemberItem = ({username, icon}: memberItemProps) => (
 type channelItemProps = {
     name: string,
     type: 'text' | 'voice',
+    onClick?: () => void,
+    active?: boolean,
 };
 
-const ChannelItem = ({ name, type }: channelItemProps) => (
-    <div className='w-full flex items-center space-x-2 p-2 rounded-md hover:bg-dc-700'>
+const ChannelItem = ({ name, type, onClick, active }: channelItemProps) => (
+    <div className={`w-full flex items-center space-x-2 p-2 rounded-md hover:bg-dc-700 ${active ? 'bg-dc-600 hover:bg-dc-600' : ''}`} onClick={onClick}>
         { type=='text' && (
             <IoChatbubbleEllipses size={20} />
         )}

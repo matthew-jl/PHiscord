@@ -8,9 +8,13 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { collection, doc, getDoc, query } from '@firebase/firestore';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { useRouter } from 'next/router'
-import React, { useEffect, useState } from 'react'
+import React, { ReactNode, useEffect, useState } from 'react'
 
-const ServerPage = () => {
+type ServerPageProps = {
+    children: ReactNode;
+};
+
+const ServerPage = ({ children }: ServerPageProps) => {
     const user = useAuth();
     const router = useRouter();
     const { serverId } = router.query;
@@ -51,7 +55,7 @@ const ServerPage = () => {
                 const serverRef = doc(db, 'servers', activeServerId);
                 const serverSnap = await getDoc(serverRef);
                 if (serverSnap.exists()) {
-                    setServerData(serverSnap.data());
+                    setServerData({id: activeServerId, ...serverSnap.data()});
                     console.log(serverSnap.data());
                 } else {
                     console.log('failed to fetch servers data')
@@ -138,30 +142,7 @@ const ServerPage = () => {
                             serverChannelData = { serverChannelData } 
                             channelData = { channelData }   
                         />
-                        <div className="grow h-screen mx-60 bg-dc-700 flex flex-col">
-                            <div className='w-full min-h-12 shadow-md font-semibold flex items-center text-sm text-left'>
-                                <div className='grow pl-4'>channel placeholder</div>
-                            </div>
-                            <ScrollArea className='h-full'>
-                                This is { serverData?.name }
-                                <div className='flex flex-col space-y-20'>
-                                    <p>placeholder</p>
-                                    <p>placeholder</p>
-                                    <p>placeholder</p>
-                                    <p>placeholder</p>
-                                    <p>placeholder</p>
-                                    <p>placeholder</p>
-                                    <p>placeholder</p>
-                                    <p>placeholder</p>
-                                    <p>placeholder</p>
-                                    <p>placeholder</p>
-                                    <p>placeholder2</p>
-                                </div>
-                            </ScrollArea>
-                            <div className='w-full h-fit px-4 pb-4 pt-2'>
-                                <Input className='bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0' placeholder='Message here...' />
-                            </div>
-                        </div>
+                        { children }
                     </div> 
                 )}
         </>
