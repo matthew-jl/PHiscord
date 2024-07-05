@@ -8,7 +8,7 @@ import { MdDelete } from "react-icons/md";
 import { HiMiniSpeakerWave } from "react-icons/hi2";
 import { ScrollArea } from './ui/scroll-area';
 import { useModal } from '@/lib/hooks/useModalStore';
-import { FaUsersCog } from 'react-icons/fa';
+import { FaHashtag, FaUsersCog } from 'react-icons/fa';
 import { useRouter } from 'next/router';
 import { deleteField, doc, getDoc, updateDoc } from '@firebase/firestore';
 import { db } from '@/lib/firebaseConfig';
@@ -260,9 +260,9 @@ type channelItemProps = {
 };
 
 const ChannelItem = ({ name, type, onClick, active }: channelItemProps) => (
-    <div className={`w-full flex items-center space-x-2 p-2 rounded-md hover:bg-dc-700 ${active ? 'bg-dc-600 hover:bg-dc-600' : ''}`} onClick={onClick}>
+    <div className={`w-full flex items-center space-x-2 p-2 rounded-md ${active ? 'bg-dc-600 hover:bg-dc-600' : 'hover:bg-dc-700'}`} onClick={onClick}>
         { type=='text' && (
-            <IoChatbubbleEllipses size={20} />
+            <FaHashtag />
         )}
         { type=='voice' && (
             <HiMiniSpeakerWave size={20} />

@@ -62,8 +62,8 @@ export default function HomePage() {
                         Go to register page
                     </Link>
                     <SignoutButton />
-                    <Link href="http://localhost:8888/invite/36c4a625-332e-43b0-b03f-8947a16ac5bf/InviteCodePage" className="hover:underline">test</Link>
-                    <Link href="http://localhost:8888/servers/f8497110-be89-4dd5-9954-24da586002be/ServerPage" className="hover:underline">try to hack</Link>
+                    <Link href="http://localhost:8888/invite/f2a7bd43-36f0-4a5e-bab1-8808c9ec48d4/InviteCodePage" className="hover:underline">test</Link>
+                    <Link href="https://youtube.com" target='_blank' className="hover:underline">try to hack</Link>
                 </div>
             </>
             )}
