@@ -48,7 +48,7 @@ const InviteCodePage = () => {
         if (serverMemberSnap.data()[user.uid]) {
           console.log('you are already a member of this server.');
           router.push(`/servers/${serverId}/ServerPage`);
-          setIsLoading(false);
+          // setIsLoading(false);
           return;
         }
         

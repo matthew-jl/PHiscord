@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import ServerPage from '../../ServerPage';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { db } from '@/lib/firebaseConfig';
+import { db, storage } from '@/lib/firebaseConfig';
 import { arrayRemove, arrayUnion, doc, getDoc, onSnapshot, serverTimestamp, updateDoc } from '@firebase/firestore';
 import Loading from '@/components/Loading';
 import { MdEmojiEmotions } from 'react-icons/md';
@@ -11,10 +11,14 @@ import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { IoSend } from 'react-icons/io5';
+import { IoDocumentSharp, IoSend } from 'react-icons/io5';
 import { FaHashtag } from 'react-icons/fa';
 import ChatMessage from '@/components/ChatMessage';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { v4 } from 'uuid';
+import { Label } from '@/components/ui/label';
+import { RiAttachment2 } from 'react-icons/ri';
+import { ref, uploadBytes } from 'firebase/storage';
 
 const ChannelPage = () => {
     const { theme } = useTheme();
@@ -56,30 +60,89 @@ const ChannelPage = () => {
             unSub();
         };
     }, []);
-    console.log(chat)
 
-    const scrollAreaRef = useRef(null);
-    const scrollToBottom = () => {
-        scrollAreaRef.current?.scrollIntoView({ behavior: "smooth" })
-    }
-    useEffect(() => {
-        scrollToBottom()
-    }, [chat]);
+    // TODO: Scroll to bottom automatically
+    // const scrollAreaRef = useRef(null);
+    // const scrollToBottom = () => {
+    //     scrollAreaRef.current?.scrollIntoView({ behavior: "smooth" })
+    // }
+    // useEffect(() => {
+    //     scrollToBottom()
+    // }, [chat]);
     
     // append emoji to text when emoji is chosen
     const handleEmoji = (e) => {
         setText((prev) => prev + e.emoji);
     }
     
+    // to convert file size to have formats
+    const formatFileSize = (size) => {
+        const units = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        let unitIndex = 0;
+        let readableSize = size;
+    
+        while (readableSize >= 1024 && unitIndex < units.length - 1) {
+            readableSize = parseFloat(readableSize) / 1024;
+            unitIndex++;
+        }
+        // round up to 2 decimals and add the format to the end
+        readableSize = readableSize.toFixed(2) + ' ' + units[unitIndex];
+        console.log(readableSize);
+    
+        return readableSize;
+    };
+
     const [text, setText] = useState('');
+    const [file, setFile] = useState({
+        type: null, // can be image or file
+        file: null,
+        url: "",
+        uploadUrl: "",
+        size: null,
+    });
+    const handleFile = (e) => {
+        if (e.target.files[0]) {
+            const fileType = e.target.files[0].type.startsWith('image/') ? 'image' : 'file';
+            console.log(e.target.files[0].size);
+            const fileSize = formatFileSize(e.target.files[0].size);
+            if (fileType === 'image') {
+                setFile({
+                    type: fileType,
+                    file: e.target.files[0],
+                    url: URL.createObjectURL(e.target.files[0]),
+                    uploadUrl: `chat-images/${e.target.files[0].name + v4()}`,
+                    size: fileSize,
+                });
+            } else {
+                setFile({
+                    type: fileType,
+                    file: e.target.files[0],
+                    url: URL.createObjectURL(e.target.files[0]),
+                    uploadUrl: `chat-files/${e.target.files[0].name}`,
+                    size: fileSize,
+                })
+            }
+        } else {
+            console.log('file/image not found');
+        }
+    }
     const handleSend = async () => {
-        if (text === '') return;
+        if (text === '' && !file.file) return;
         try {
+            if (file.file) {
+                const fileRef = ref(storage, file.uploadUrl);
+                await uploadBytes(fileRef, file.file).then(() => {
+                    console.log('file/image uploaded');
+                })
+            }
+
             await updateDoc(doc(db, 'channelMessages',channelId), {
                 messages: arrayUnion({
                     userId: user.uid,
                     content: text,
                     timestamp: new Date(),
+                    ...(file.uploadUrl != "" && { [`${file.type}Url`]: file.uploadUrl }), // either imageType or fileType
+                    ...(file.type === 'file' && { fileSize: file.size }),
                 })
             });
             console.log('successfully added data to channelMessages')
@@ -87,6 +150,13 @@ const ChannelPage = () => {
             console.log(error);
         }
         setText('');
+        setFile({
+            type: null,
+            file: null,
+            url: '',
+            uploadUrl: '',
+            size: null,
+        });
     };
 
     const handleDelete = async (message) => {
@@ -149,26 +219,63 @@ const ChannelPage = () => {
                             {/* <ChatMessage username='test' content='wassup'/> */}
                             { chat && chat.messages.map((message) => (
                                 <ChatMessage 
+                                key={message.timestamp}
                                 userId={message.userId} 
                                 content={message.content} 
                                 timestamp={message.timestamp} 
                                 onDelete={() => handleDelete(message)}
                                 onEdit={(newContent) => handleEdit(message, newContent)}
                                 isEdited={message?.isEdited}
+                                imageUrl={message?.imageUrl}
+                                fileUrl={message?.fileUrl}
+                                fileSize={message?.fileSize}
                                 />
                             )) }
                         </div>
-                        <div ref={scrollAreaRef}></div>
+                        {/* <div ref={scrollAreaRef}></div> */}
                     </div>
                 </ScrollArea>
                 {/* Chat Input */}
                 <div className='w-full h-fit px-4 pb-4 pt-2 relative flex space-x-2'>
+                    {/* Main Input */}
                     <Input 
                     className='bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0' 
                     placeholder={`Message #${ channelData.name }`} 
                     value={ text }
                     onChange={ e => setText(e.target.value) }
                     />
+                    {/* Image Attachment */}
+                    <Label htmlFor='imageInput' className='absolute right-28 bottom-6 cursor-pointer'>
+                        <RiAttachment2 size={24}/>
+                    </Label>
+                    <Input
+                        type='file'
+                        id='imageInput'
+                        className='hidden'
+                        onChange={handleFile}
+                    />
+                    { file.file && (
+                        <div className='absolute right-16 bottom-16 w-60 h-fit bg-dc-900 rounded-md p-2 '>
+                            { file.type === 'image' && (
+                                <>
+                                    <p className='text-xs'>Image selected: { file.file.name }</p>
+                                    <div className='w-52 h-52 mx-auto my-2'>
+                                        <img src={ file.url } alt={ file.file.name } className='w-full h-full object-contain'/>
+                                    </div>
+                                </>
+                            )}
+                            { file.type === 'file' && (
+                                <>
+                                    <p className='text-xs'>File selected: { file.file.name }</p>
+                                    <div className='w-52 h-52 mx-auto my-2 flex flex-col justify-center items-center'>
+                                        <IoDocumentSharp size={60}/>
+                                        <p className='text-sm'>{ file.size }</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+                    {/* Emoji Picker */}
                     <DropdownMenu>
                         <DropdownMenuTrigger className='absolute right-20 bottom-6'>
                             <MdEmojiEmotions size={24} className='' />
