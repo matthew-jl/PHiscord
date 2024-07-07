@@ -64,7 +64,7 @@ const EditServerModal = () => {
 
     const editServer = async (name, image) => {
         const serverRef = doc(db, "servers", serverId);
-        const updateData = { name: name };
+        const updateData: { name: string; imageUrl?: string } = { name: name };
         if (image) {
             updateData.imageUrl = image;
         }
@@ -139,9 +139,9 @@ const EditServerModal = () => {
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-7'>
                         <div className='space-y-2'>
-                            <div className='flex items-center justify-center text-center'>
+                            <div className='flex items-center justify-center text-center w-24 h-24 m-auto rounded-full bg-dc-900 overflow-hidden'>
                                 {imagePreview && (
-                                    <img src={imagePreview} alt="Image Preview" className="w-24 h-24 rounded-full" />
+                                    <img src={imagePreview} alt="Image Preview" className="" />
                                 )}
                             </div>
                             <FormField

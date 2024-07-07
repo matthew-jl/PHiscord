@@ -14,10 +14,6 @@ import { deleteField, doc, getDoc, updateDoc } from '@firebase/firestore';
 import { db } from '@/lib/firebaseConfig';
 import { useAuth } from '@/lib/hooks/useAuth';
 
-// interface ServerData {
-//     name: string,
-// }
-
 type serverSidebarProps = {
     serverData: any,
     serverMemberData: any,
@@ -87,6 +83,8 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
             }
         }
     });
+    textChannelList.sort((a, b) => a.name.localeCompare(b.name));
+    voiceChannelList.sort((a, b) => a.name.localeCompare(b.name));
 
     const serverId = serverData.id;
     const onLeave = async (userId) => {
@@ -121,6 +119,50 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
         }
     };
 
+    type memberItemProps = {
+        username: string,
+        icon?: string,
+    }
+
+    const MemberItem = ({username, icon}: memberItemProps) => (
+        <div className='w-full flex items-center space-x-3 p-2 rounded-md hover:bg-dc-700'>
+            <div className='bg-red-500 w-9 h-9 rounded-3xl overflow-hidden'>
+                {icon ? (
+                    <img src={ icon } alt={ username }/>
+                ) : (
+                    <img src='\images\profile-picture-placeholder-yellow.png' alt={ username } />
+                )
+                }
+            </div>
+            <div className='text-primary text-sm'>{ username }</div>
+        </div>
+    );
+
+    type channelItemProps = {
+        id: string,
+        name: string,
+        type: 'text' | 'voice',
+        onClick?: () => void,
+        active?: boolean,
+    };
+
+    const ChannelItem = ({ id, name, type, onClick, active }: channelItemProps) => (
+        <div 
+        className={`w-full flex items-center space-x-2 p-2 rounded-md cursor-pointer ${active ? 'bg-dc-600 hover:bg-dc-600 pointer-events-none' : 'hover:bg-dc-700'}`} 
+        {...(!active && { onClick:onClick })}
+        >
+            { type=='text' && (
+                <FaHashtag size={14}/>
+            )}
+            { type=='voice' && (
+                <HiMiniSpeakerWave size={16} />
+            )}
+            <div className='text-primary text-sm'>{ name }</div>
+            <div className='grow'/>
+            <IoSettingsSharp size={14} className={`${!active && 'hidden'} pointer-events-auto`} onClick={() => onOpen('editChannel')} />
+        </div>
+    );
+
   return (
     <>
         {/* Left Sidebar */}
@@ -149,7 +191,7 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         </DropdownMenuItem>
                     )}
                     { isAdmin && (
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onOpen('createChannel')}>
                             Create Channel
                             <IoMdAddCircle className='ml-auto' />
                         </DropdownMenuItem>
@@ -177,11 +219,12 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>text channels</p>
                             { textChannelList.map((channel) => (
                                 <ChannelItem 
+                                id={ channel.id }
                                 name={ channel.name } 
                                 type={ channel.type } 
                                 key={ channel.id } 
                                 onClick={() => router.push(`/servers/${serverId}/channels/${channel.id}/ChannelPage`)}
-                                active={channelId == channel.id}
+                                active={ channelId == channel.id }
                                 />
                             ))}
                         </div>
@@ -190,7 +233,7 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>voice channels</p>
                             { voiceChannelList.map((channel) => (
-                                <ChannelItem name={ channel.name } type={ channel.type } key={ channel.id }/>
+                                <ChannelItem id={ channel.id } name={ channel.name } type={ channel.type } key={ channel.id }/>
                             ))}
                         </div>
                     )}
@@ -232,43 +275,5 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
     </>
   )
 }
-
-type memberItemProps = {
-    username: string,
-    icon?: string,
-}
-
-const MemberItem = ({username, icon}: memberItemProps) => (
-    <div className='w-full flex items-center space-x-3 p-2 rounded-md hover:bg-dc-700'>
-        <div className='bg-red-500 w-9 h-9 rounded-3xl overflow-hidden'>
-            {icon ? (
-                <img src={ icon } alt={ username }/>
-            ) : (
-                <img src='\images\profile-picture-placeholder-yellow.png' alt={ username } />
-            )
-            }
-        </div>
-        <div className='text-primary text-sm'>{ username }</div>
-    </div>
-);
-
-type channelItemProps = {
-    name: string,
-    type: 'text' | 'voice',
-    onClick?: () => void,
-    active?: boolean,
-};
-
-const ChannelItem = ({ name, type, onClick, active }: channelItemProps) => (
-    <div className={`w-full flex items-center space-x-2 p-2 rounded-md ${active ? 'bg-dc-600 hover:bg-dc-600' : 'hover:bg-dc-700'}`} onClick={onClick}>
-        { type=='text' && (
-            <FaHashtag />
-        )}
-        { type=='voice' && (
-            <HiMiniSpeakerWave size={20} />
-        )}
-        <div className='text-primary text-sm'>{ name }</div>
-    </div>
-);
 
 export default ServerSidebar

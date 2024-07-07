@@ -48,7 +48,7 @@ const ChannelPage = () => {
             setIsLoading(false);
         };
         fetchChannelData();
-    }, [])
+    }, [router]);
 
     // Read chat real-time
     const [chat, setChat] = useState(null);
@@ -59,7 +59,7 @@ const ChannelPage = () => {
         return () => {
             unSub();
         };
-    }, []);
+    }, [router]);
 
     // TODO: Scroll to bottom automatically
     // const scrollAreaRef = useRef(null);
@@ -217,7 +217,7 @@ const ChannelPage = () => {
                         </div>
                         <div className='space-y-2'>
                             {/* <ChatMessage username='test' content='wassup'/> */}
-                            { chat && chat.messages.map((message) => (
+                            { chat && chat.messages && chat.messages.map((message) => (
                                 <ChatMessage 
                                 key={message.timestamp}
                                 userId={message.userId} 

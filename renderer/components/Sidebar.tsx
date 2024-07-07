@@ -152,10 +152,12 @@ type iconProps = {
 };
 
 const SidebarIcon = ({ icon, tooltip, onClick, active = false }: iconProps) => (
-    <TooltipProvider delayDuration={100}>
+  <TooltipProvider delayDuration={100}>
     <Tooltip>
       <TooltipTrigger asChild>
-      <div className={`sidebar-icon hover:bg-dc-green hover:text-primary ${active ? 'border-2 border-dc-green rounded-xl' : ''}`} onClick={onClick}>
+      <div 
+      className={`sidebar-icon hover:bg-dc-green hover:text-primary ${active ? 'border-2 border-dc-green rounded-xl pointer-events-none' : ''}`} 
+      onClick={onClick}>
          { icon }
      </div>
       </TooltipTrigger>

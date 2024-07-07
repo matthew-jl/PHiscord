@@ -114,7 +114,9 @@ const InitialModal = () => {
     await setDoc(doc(db, 'serverChannels', id), dataServerChannels);
 
     // 'channelMessages' collection for text channel (set empty)
-    await setDoc(doc(db, 'channelMessages', channelIdText), {});
+    await setDoc(doc(db, 'channelMessages', channelIdText), {
+      messages: [],
+    });
 
   }
 
