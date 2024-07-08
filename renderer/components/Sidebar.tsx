@@ -102,7 +102,7 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
               {servers.map((server) => (
                 <SidebarIcon
                   key={server.id}
-                  icon={<img src={server.imageDownloadUrl} alt={server.name} />}
+                  icon={<img src={server.imageDownloadUrl} alt={server.name} className='w-full h-full object-cover' />}
                   tooltip={server.name}
                   onClick={() => router.push(`/servers/${server.id}/ServerPage`)}
                   active={activeServerId === server.id}
@@ -111,32 +111,18 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
 
               <SidebarIcon icon={ <IoMdAdd size="27"/> } tooltip="Add a Server" onClick={() => onOpen('createServer')}/>
               <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-
-              {/* Just to test scroll area */}
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
-              test
           </div>
         </ScrollArea>
       </div>
       {/* User Status Bar */}
-      <div className='fixed bottom-0 left-16 w-60 h-12 bg-dc-900 z-40 flex items-center px-2'>
+      <div className='fixed bottom-0 left-16 w-60 h-12 bg-dc-900/70 z-40 flex items-center px-2'>
               <div className='w-8 h-8 rounded-full overflow-hidden'>
-                <img src={ profilePicture } alt="Profile pic" />
+                <img src={ profilePicture } alt="Profile pic" className='w-full h-full object-cover' />
               </div>
               <span className='text-sm pl-2'>{ userData.username }</span>
               <FaMicrophone size={16} className='mx-2 ml-auto'/>
               <FaHeadphonesAlt size={16} className='mx-1'/>
-              <IoSettingsSharp size={16} className='mx-2'/>
+              <IoSettingsSharp size={16} className='mx-2 cursor-pointer' onClick={() => onOpen('userSettings')}/>
       </div>
       </>
       )}

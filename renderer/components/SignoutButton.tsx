@@ -11,10 +11,11 @@ const SignoutButton = () => {
     const handleSignOut = async () => {
         await signOut(auth);
         router.push('/login');
+        router.reload();
     }
 
   return (
-    <Button onClick={ handleSignOut }>
+    <Button onClick={ handleSignOut } variant='destructive'>
         Sign Out
     </Button>
   )

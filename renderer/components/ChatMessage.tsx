@@ -103,7 +103,7 @@ const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, i
         { isLoading ? <Loading /> : (
             <div className='flex py-1 px-4 hover:bg-dc-600 relative group'>
                 <div className='w-10 h-10 rounded-full overflow-hidden'>
-                    <img src={ userData.icon } alt={ userId } className='object-cover' />
+                    <img src={ userData.icon } alt={ userId } className='w-full h-full object-cover' />
                 </div>
                 <div className='flex flex-col text-sm ml-3 grow'>
                     <p className='font-medium'>

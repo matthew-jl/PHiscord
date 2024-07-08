@@ -171,7 +171,9 @@ const InitialModal = () => {
                   <div className='flex items-center justify-center text-center'>
                     {/* DISPLAY CHOSEN IMAGE */}
                     {imagePreview && (
-                      <img src={imagePreview} alt="imagePreview" className='w-24 h-24 rounded-full' />
+                      <div className='w-24 h-24 rounded-full overflow-hidden'>
+                        <img src={imagePreview} alt="imagePreview" className='w-full h-full object-cover' />
+                      </div>
                     )}
                   </div>
                   <FormField 

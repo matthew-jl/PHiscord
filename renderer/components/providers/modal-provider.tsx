@@ -7,6 +7,7 @@ import EditServerModal from "@/components/modals/edit-server-modal";
 import MembersModal from "@/components/modals/members-modal";
 import CreateChannelModal from "@/components/modals/create-channel-modal";
 import EditChannelModal from "@/components/modals/edit-channel-modal";
+import UserSettingsModal from "@/components/modals/user-settings-modal";
 
 export const ModalProvider = () => {
     const [isMounted, setIsMounted] = useState(false);
@@ -27,6 +28,7 @@ export const ModalProvider = () => {
             <MembersModal />
             <CreateChannelModal />
             <EditChannelModal />
+            <UserSettingsModal />
         </>
     )
 }

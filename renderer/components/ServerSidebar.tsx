@@ -128,7 +128,7 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
         <div className='w-full flex items-center space-x-3 p-2 rounded-md hover:bg-dc-700'>
             <div className='bg-red-500 w-9 h-9 rounded-3xl overflow-hidden'>
                 {icon ? (
-                    <img src={ icon } alt={ username }/>
+                    <img src={ icon } alt={ username } className='w-full h-full object-cover'/>
                 ) : (
                     <img src='\images\profile-picture-placeholder-yellow.png' alt={ username } />
                 )
@@ -159,7 +159,9 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
             )}
             <div className='text-primary text-sm'>{ name }</div>
             <div className='grow'/>
-            <IoSettingsSharp size={14} className={`${!active && 'hidden'} pointer-events-auto`} onClick={() => onOpen('editChannel')} />
+            { isAdmin && (
+                <IoSettingsSharp size={14} className={`${!active && 'hidden'} pointer-events-auto`} onClick={() => onOpen('editChannel')} />
+            )}
         </div>
     );
 
@@ -257,7 +259,7 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>admin</p>
                             {adminList.map((user) => (
-                                <MemberItem username={ user.username } key={ user.uid }/>
+                                <MemberItem username={ user.username } icon={ user.imageDownloadUrl } key={ user.uid }/>
                             ))}
                         </div>
                     )}
@@ -265,7 +267,7 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>member</p>
                             {memberList.map((user) => (
-                                <MemberItem username={ user.username } key={ user.uid }/>
+                                <MemberItem username={ user.username } icon={ user.imageDownloadUrl } key={ user.uid }/>
                             ))}
                         </div>
                     )}

@@ -141,7 +141,7 @@ const EditServerModal = () => {
                         <div className='space-y-2'>
                             <div className='flex items-center justify-center text-center w-24 h-24 m-auto rounded-full bg-dc-900 overflow-hidden'>
                                 {imagePreview && (
-                                    <img src={imagePreview} alt="Image Preview" className="" />
+                                    <img src={imagePreview} alt="Image Preview" className="w-full h-full object-cover" />
                                 )}
                             </div>
                             <FormField

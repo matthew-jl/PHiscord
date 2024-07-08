@@ -120,7 +120,7 @@ const MembersModal = () => {
                                 {membersByRole.ownerList.map((user) => (
                                     <div className='flex w-full items-center p-2 rounded-md hover:bg-dc-700' key={user.username}>
                                         <div className='w-10 h-10 rounded-full overflow-hidden'>
-                                            <img src={user.imageDownloadUrl} alt={user.username} />
+                                            <img src={user.imageDownloadUrl} alt={user.username} className='w-full h-full object-cover'/>
                                         </div>
                                         <p className='ml-4'>{user.username}</p>
                                     </div>
