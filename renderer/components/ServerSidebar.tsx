@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { RiArrowDropDownLine } from "react-icons/ri";
 import { IoMdAddCircle, IoMdPersonAdd } from "react-icons/io";
@@ -10,9 +10,10 @@ import { ScrollArea } from './ui/scroll-area';
 import { useModal } from '@/lib/hooks/useModalStore';
 import { FaHashtag, FaUsersCog } from 'react-icons/fa';
 import { useRouter } from 'next/router';
-import { deleteField, doc, getDoc, updateDoc } from '@firebase/firestore';
+import { and, collection, deleteDoc, deleteField, doc, getDoc, getDocs, or, query, serverTimestamp, setDoc, updateDoc, where } from '@firebase/firestore';
 import { db } from '@/lib/firebaseConfig';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { v4 } from 'uuid';
 
 type serverSidebarProps = {
     serverData: any,
@@ -119,24 +120,135 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
         }
     };
 
-    type memberItemProps = {
-        username: string,
-        icon?: string,
+    const sendFriendRequest = async (senderId, receiverId) => {
+        // friendships
+        const friendshipId = 'friendship' + v4();
+        await setDoc(doc(db, 'friendships', friendshipId), {
+            accepted: false,
+            user1: senderId,
+            user2: receiverId,
+            timestamp: serverTimestamp(),
+        });
+        console.log('friend request sent');
+        alert('successfully sent friend request');
     }
 
-    const MemberItem = ({username, icon}: memberItemProps) => (
-        <div className='w-full flex items-center space-x-3 p-2 rounded-md hover:bg-dc-700'>
-            <div className='bg-red-500 w-9 h-9 rounded-3xl overflow-hidden'>
-                {icon ? (
-                    <img src={ icon } alt={ username } className='w-full h-full object-cover'/>
-                ) : (
-                    <img src='\images\profile-picture-placeholder-yellow.png' alt={ username } />
-                )
+    const removeFriendRequest = async (senderId, receiverId) => {
+        const friendshipsRef = collection(db, 'friendships');
+        const q = query(friendshipsRef, 
+            or( and( where('user1', '==', senderId), where('user2', '==', receiverId) ), 
+                and( where('user1', '==', receiverId), where('user2', '==', senderId) )
+            )
+        );
+        const qSnapshot = await getDocs(q);
+        qSnapshot.forEach(async (doc) => {
+            await deleteDoc(doc.ref);
+        });
+        console.log('friend request removed');
+        alert('successfully removed friend request');
+    }
+
+    const friendRequestExists = async (senderId, receiverId) => {
+        const friendshipsRef = collection(db, 'friendships');
+        const q = query(friendshipsRef, 
+            or( and( where('user1', '==', senderId), where('user2', '==', receiverId) ), 
+                and( where('user1', '==', receiverId), where('user2', '==', senderId) )
+            )
+        );
+        const qSnapshot = await getDocs(q);
+        if (qSnapshot.empty) {
+            return false;
+        }
+        return true;
+    }
+
+    const checkFriendshipExists = async (senderId, receiverId) => {
+        const friendshipsRef = collection(db, 'friendships');
+        const q = query(friendshipsRef, 
+            or( and( where('user1', '==', senderId), where('user2', '==', receiverId) ), 
+                and( where('user1', '==', receiverId), where('user2', '==', senderId) )
+            )
+        );
+        const qSnapshot = await getDocs(q);
+        for (const doc of qSnapshot.docs) {
+            if (doc.data().accepted) {
+                return true;
+            }
+        };
+        return false;
+    }
+
+    type memberItemProps = {
+        uid: string,
+        username: string,
+        icon?: string,
+        customStatus?: string,
+    }
+
+    const MemberItem = ({ uid, username, icon, customStatus }: memberItemProps) => {
+        const [friendshipExists, setFriendshipExists] = useState(false);
+        const [friendRequestSent, setFriendRequestSent] = useState(false);
+
+        useEffect(() => {
+            const checkFriendRequest = async () => {
+                if (user && user.uid) {
+                    const friendshipExists = await checkFriendshipExists(user.uid, uid);
+                    setFriendshipExists(friendshipExists);
+                    const exists = await friendRequestExists(user.uid, uid);
+                    setFriendRequestSent(exists);
                 }
-            </div>
-            <div className='text-primary text-sm'>{ username }</div>
-        </div>
-    );
+            }
+            checkFriendRequest();
+        }, [uid, user]);
+
+        const handleSendFriendRequest = async () => {
+            await sendFriendRequest(user.uid, uid);
+            setFriendRequestSent(true);
+        }
+
+        const handleRemoveFriendRequest = async () => {
+            await removeFriendRequest(user.uid, uid);
+            setFriendRequestSent(false);
+        }
+
+        return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild className='cursor-pointer'>
+                <div className='w-full flex items-center space-x-3 p-2 rounded-md hover:bg-dc-700'>
+                    <div className='bg-red-500 w-9 h-9 rounded-3xl overflow-hidden'>
+                        {icon ? (
+                            <img src={ icon } alt={ username } className='w-full h-full object-cover'/>
+                        ) : (
+                            <img src='\images\profile-picture-placeholder-yellow.png' alt={ username } />
+                        )
+                        }
+                    </div>
+                    <div className='flex flex-col'>
+                        <span className='text-sm'>{ username }</span>
+                        <span className='text-xs italic'>{ customStatus }</span>
+                    </div>
+                </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                { user && uid === user.uid ? (
+                    <DropdownMenuItem>Change Nickname</DropdownMenuItem>
+                ) : (
+                    <>
+                        { !friendshipExists && (
+                            <>
+                                { friendRequestSent ? (
+                                    <DropdownMenuItem onClick={handleRemoveFriendRequest}>Remove Friend Request</DropdownMenuItem>
+                                ) : (
+                                    <DropdownMenuItem onClick={handleSendFriendRequest}>Send Friend Request</DropdownMenuItem>
+                                )}
+                            </>
+                        ) }
+                        <DropdownMenuItem>Message</DropdownMenuItem>
+                    </>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )};
 
     type channelItemProps = {
         id: string,
@@ -251,7 +363,12 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>owner</p>
                             {ownerList.map((user) => (
-                                <MemberItem username={ user.username } icon={ user.imageDownloadUrl } key={ user.uid }/>
+                                <MemberItem 
+                                uid={ user.uid }
+                                username={ user.username } 
+                                icon={ user.imageDownloadUrl } 
+                                key={ user.uid } 
+                                customStatus={ user?.customStatus }/>
                             ))}
                         </div>
                     )}
@@ -259,7 +376,12 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>admin</p>
                             {adminList.map((user) => (
-                                <MemberItem username={ user.username } icon={ user.imageDownloadUrl } key={ user.uid }/>
+                                <MemberItem 
+                                uid={ user.uid }
+                                username={ user.username } 
+                                icon={ user.imageDownloadUrl } 
+                                key={ user.uid } 
+                                customStatus={ user?.customStatus }/>
                             ))}
                         </div>
                     )}
@@ -267,7 +389,12 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>member</p>
                             {memberList.map((user) => (
-                                <MemberItem username={ user.username } icon={ user.imageDownloadUrl } key={ user.uid }/>
+                                <MemberItem 
+                                uid={ user.uid }
+                                username={ user.username } 
+                                icon={ user.imageDownloadUrl } 
+                                key={ user.uid } 
+                                customStatus={ user?.customStatus }/>
                             ))}
                         </div>
                     )}

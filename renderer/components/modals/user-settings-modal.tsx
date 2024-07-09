@@ -37,6 +37,7 @@ import { HiPencil } from 'react-icons/hi2'
 import { Separator } from '../ui/separator'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth'
+import { ModeToggle } from '../mode-toggle'
 
 // make a schema using zod for the form
 const formSchema = z.object({
@@ -44,6 +45,7 @@ const formSchema = z.object({
         message: 'Username is required.'
     }),
     profilePicture: z.any().optional(),
+    customStatus: z.string().optional(),
 });
 
 const reauthSchema = z.object({
@@ -83,7 +85,8 @@ const UserSettingsModal = () => {
         }
         fetchUserData();
         form.reset({
-            username: userData?.username
+            username: userData?.username,
+            customStatus: userData?.customStatus,
         })
     }, [isOpen, user]);
 
@@ -99,6 +102,7 @@ const UserSettingsModal = () => {
         defaultValues: {
             username: "",
             profilePicture: null,
+            customStatus: "",
         }
     });
     const reauthForm = useForm({
@@ -118,6 +122,7 @@ const UserSettingsModal = () => {
 
         const updates: any = {
             username: values.username,
+            customStatus: values.customStatus,
         };
 
         if (values.profilePicture) {
@@ -209,7 +214,7 @@ const UserSettingsModal = () => {
                                                         <FormControl>
                                                             <Input
                                                                 disabled={isLoading}
-                                                                className='bg-dc-900 text-primary placeholder:text-primary/80 focus-visible:ring-0 focus-visible:ring-offset-0'
+                                                                className='bg-dc-900 text-primary placeholder:text-primary/20 focus-visible:ring-0 focus-visible:ring-offset-0'
                                                                 placeholder='Enter your username'
                                                                 {...field}
                                                             />
@@ -228,6 +233,26 @@ const UserSettingsModal = () => {
                                                     className='bg-dc-900 text-primary placeholder:text-primary/80 focus-visible:ring-0 focus-visible:ring-offset-0'
                                                 />
                                             </FormItem>
+                                            <FormField
+                                                control={form.control}
+                                                name="customStatus"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className='text-xs font-semibold text-primary uppercase'>
+                                                            custom status
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                disabled={isLoading}
+                                                                className='bg-dc-900 text-primary placeholder:text-primary/20 focus-visible:ring-0 focus-visible:ring-offset-0'
+                                                                placeholder='Enter your custom status (leave blank for empty)'
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage className='text-red-500' />
+                                                    </FormItem>
+                                                )}
+                                            />
                                             <div>
                                                 <Button disabled={isLoading} variant='blurple' className='mt-2'>
                                                         Save Changes
@@ -331,7 +356,10 @@ const UserSettingsModal = () => {
                         </div>
                     </TabsContent>
                     <TabsContent value='appearance' className='h-fit'>
-                        <div className='bg-dc-800 w-full h-full rounded-lg p-4'>Appearance</div>
+                        <div className='bg-dc-800 w-full h-full rounded-lg p-4'>
+                            <p className='text-xs font-semibold text-primary uppercase'>Change Theme</p>
+                            <ModeToggle />
+                        </div>
                     </TabsContent>
                     <TabsContent value='overlay' className='h-fit'>
                         <div className='bg-dc-800 w-full h-full rounded-lg p-4'>OVerlay</div>

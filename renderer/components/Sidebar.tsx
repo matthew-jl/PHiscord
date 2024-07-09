@@ -17,7 +17,7 @@ import Loading from './Loading';
 import Link from 'next/link';
 import { IoSettingsSharp } from 'react-icons/io5';
 
-const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
+const Sidebar = ({ activeServerId, chatIsActive }: { activeServerId?: string, chatIsActive?: boolean, }) => {
   const { onOpen } = useModal();
   const user = useAuth();
   const [servers, setServers] = useState([]);
@@ -87,9 +87,14 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
         <div className="flex flex-col items-center">
           <Link href='/home'>home</Link>
           <SidebarIconTheme icon= { <ModeToggle/> } tooltip="Change Theme"/>
-          <SidebarIconDM icon={ 
+          <SidebarIconDM 
+          icon={ 
             <ThemeImage srcLight="\images\discord-mark-black.png" srcDark='\images\discord-mark-white.png' alt="discord mark" width="27" height="27"/>
-          } tooltip="Direct Messages"/>
+          } 
+          tooltip="Direct Messages"
+          onClick={() => router.push('/chats/FriendPage')}
+          active={ chatIsActive }
+          />
           <Separator className="h-[2px] bg-dc-600 my-1 w-11 rounded-lg"/>
         </div>
 
@@ -119,7 +124,10 @@ const Sidebar = ({ activeServerId }: { activeServerId?: string }) => {
               <div className='w-8 h-8 rounded-full overflow-hidden'>
                 <img src={ profilePicture } alt="Profile pic" className='w-full h-full object-cover' />
               </div>
-              <span className='text-sm pl-2'>{ userData.username }</span>
+              <div className='flex flex-col pl-2'>
+                <span className='text-sm'>{ userData.username }</span>
+                <span className='text-xs italic'>{ userData?.customStatus }</span>
+              </div>
               <FaMicrophone size={16} className='mx-2 ml-auto'/>
               <FaHeadphonesAlt size={16} className='mx-1'/>
               <IoSettingsSharp size={16} className='mx-2 cursor-pointer' onClick={() => onOpen('userSettings')}/>
@@ -154,11 +162,14 @@ const SidebarIcon = ({ icon, tooltip, onClick, active = false }: iconProps) => (
   </TooltipProvider>
 );
 
-const SidebarIconDM = ({icon, tooltip}: iconProps) => (
+const SidebarIconDM = ({icon, tooltip, onClick, active = false }: iconProps) => (
   <TooltipProvider delayDuration={100}>
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="sidebar-icon hover:bg-dc-blurple">
+        <div 
+        className={`sidebar-icon hover:bg-dc-blurple ${active ? 'bg-dc-blurple rounded-xl pointer-events-none' : ''}`}
+        onClick={onClick}
+        >
             { icon }
         </div>
       </TooltipTrigger>
