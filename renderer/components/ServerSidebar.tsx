@@ -14,6 +14,9 @@ import { and, collection, deleteDoc, deleteField, doc, getDoc, getDocs, or, quer
 import { db } from '@/lib/firebaseConfig';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { v4 } from 'uuid';
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 
 type serverSidebarProps = {
     serverData: any,
@@ -45,13 +48,25 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
         if (userData) {
             switch (memberData.role) {
                 case 'owner':
-                    ownerList.push(userData);
+                    if (memberData.nickname) {
+                        ownerList.push({...userData, username: memberData.nickname });
+                    } else {
+                        ownerList.push(userData);
+                    }
                     break;
                 case 'admin':
-                    adminList.push(userData);
+                    if (memberData.nickname) {
+                        adminList.push({...userData, username: memberData.nickname });
+                    } else {
+                        adminList.push(userData);
+                    }
                     break;
                 case 'member':
-                    memberList.push(userData);
+                    if (memberData.nickname) {
+                        memberList.push({...userData, username: memberData.nickname });
+                    } else {
+                        memberList.push(userData);
+                    }
                     break;
                 default:
                     break;
@@ -178,6 +193,20 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
         return false;
     }
 
+    const removeFriendship = async (user1Id, user2Id) => {
+        const friendshipsRef = collection(db, 'friendships');
+        const q = query(friendshipsRef, 
+            or( and( where('user1', '==', user1Id), where('user2', '==', user2Id) ), 
+                and( where('user1', '==', user2Id), where('user2', '==', user1Id) )
+            )
+        );
+        const qSnapshot = await getDocs(q);
+        qSnapshot.forEach(async (doc) => {
+            await deleteDoc(doc.ref);
+        });
+        alert('successfully removed friend');
+    }
+
     type memberItemProps = {
         uid: string,
         username: string,
@@ -188,6 +217,8 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
     const MemberItem = ({ uid, username, icon, customStatus }: memberItemProps) => {
         const [friendshipExists, setFriendshipExists] = useState(false);
         const [friendRequestSent, setFriendRequestSent] = useState(false);
+        const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
+        const [newNickname, setNewNickname] = useState('');
 
         useEffect(() => {
             const checkFriendRequest = async () => {
@@ -211,7 +242,27 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
             setFriendRequestSent(false);
         }
 
+        const handleRemoveFriendship = async () => {
+            await removeFriendship(user.uid, uid);
+            setFriendshipExists(false);
+            setFriendRequestSent(false);
+        }
+
+        const handleUpdateNickname = async () => {
+            try {
+              await updateDoc(doc(db, 'serverMembers', serverId), {
+                [`${uid}.nickname`]: newNickname
+              });
+              setIsNicknameModalOpen(false);
+              alert('Nickname updated successfully');
+              router.reload();
+            } catch (error) {
+              console.error('Error updating nickname:', error);
+            }
+          }
+
         return (
+        <>
         <DropdownMenu>
             <DropdownMenuTrigger asChild className='cursor-pointer'>
                 <div className='w-full flex items-center space-x-3 p-2 rounded-md hover:bg-dc-700'>
@@ -231,23 +282,40 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 { user && uid === user.uid ? (
-                    <DropdownMenuItem>Change Nickname</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsNicknameModalOpen(true)}>Change Nickname</DropdownMenuItem>
                 ) : (
                     <>
-                        { !friendshipExists && (
+                        { !friendshipExists ? (
                             <>
                                 { friendRequestSent ? (
-                                    <DropdownMenuItem onClick={handleRemoveFriendRequest}>Remove Friend Request</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleRemoveFriendRequest}>Cancel Friend Request</DropdownMenuItem>
                                 ) : (
                                     <DropdownMenuItem onClick={handleSendFriendRequest}>Send Friend Request</DropdownMenuItem>
                                 )}
                             </>
+                        ) : (
+                            <DropdownMenuItem onClick={handleRemoveFriendship}>Remove Friend</DropdownMenuItem>
                         ) }
                         <DropdownMenuItem>Message</DropdownMenuItem>
                     </>
                 )}
             </DropdownMenuContent>
         </DropdownMenu>
+        <Dialog open={isNicknameModalOpen} onOpenChange={setIsNicknameModalOpen}>
+          <DialogContent className='bg-dc-800'>
+            <DialogTitle>Change Nickname</DialogTitle>
+            <div className='space-y-4'>
+              <Input
+                value={newNickname}
+                onChange={(e) => setNewNickname(e.target.value)}
+                placeholder='Enter new nickname (leave blank for no nickname)'
+                className='bg-dc-900 text-primary placeholder:text-primary/80 focus-visible:ring-0 focus-visible:ring-offset-0'
+              />
+              <Button variant='blurple' onClick={handleUpdateNickname}>Update</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        </>
     )};
 
     type channelItemProps = {

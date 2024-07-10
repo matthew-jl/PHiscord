@@ -22,9 +22,11 @@ type chatMessageProps = {
     imageUrl?: string;
     fileUrl?: string;
     fileSize?: string;
+    currentUserName: string;
+    currentServerId: string;
 }
 
-const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, imageUrl, fileUrl, fileSize }: chatMessageProps) => {
+const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, imageUrl, fileUrl, fileSize, currentUserName, currentServerId }: chatMessageProps) => {
     const user = useAuth();
     const timestampDate = timestamp.toDate();
     const [userData, setUserData] = useState(null);
@@ -33,6 +35,7 @@ const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, i
     const [newContent, setNewContent] = useState(content);
     const [imageDownloadUrl, setImageDownloadUrl] = useState(null);
     const [fileDownloadUrl, setFileDownloadUrl] = useState(null);
+    const [isMentioned, setIsMentioned] = useState(false);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -44,10 +47,20 @@ const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, i
                 if (userData.imageUrl) {
                     userImageDownloadUrl = await getDownloadURL(ref(storage, userData.imageUrl));
                 }
-                setUserData({
-                    username: userData.username,
-                    icon: userImageDownloadUrl,
-                });
+                const serverMemberDoc = await getDoc(doc(db, 'serverMembers', currentServerId));
+                if (serverMemberDoc.exists()) {
+                    if (serverMemberDoc.data()[userId].nickname && serverMemberDoc.data()[userId].nickname !== '') {
+                        setUserData({
+                            username: serverMemberDoc.data()[userId].nickname,
+                            icon:userImageDownloadUrl,
+                        })
+                    } else {
+                        setUserData({
+                            username: userData.username,
+                            icon: userImageDownloadUrl,
+                        });
+                    }
+                }
             }
             // get image download url
             if (imageUrl) {
@@ -75,15 +88,36 @@ const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, i
         setNewContent(content);
     };
 
+    useEffect(() => {
+        const checkIfMentioned = () => {
+            const mentionRegex = /@(\w+)/g;
+            const matches = content.match(mentionRegex);
+            if (matches) {
+                for (let match of matches) {
+                    const username = match.slice(1); // Remove the '@' character
+                    if (username === currentUserName) {
+                        setIsMentioned(true);
+                        break;
+                    }
+                }
+            }
+        };
+        checkIfMentioned();
+    }, [content, currentUserName]);
+
     const createLinkMarkup = (text) => {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
-        const parts = text.split(urlRegex).map((part, index) => {
+        const mentionRegex = /@(\w+)/g;
+        const parts = text.split(/(\s+)/).map((part, index) => {
         if (part.match(urlRegex)) {
             const sanitizedUrl = DOMPurify.sanitize(part);
             const isLocalhost = sanitizedUrl.startsWith('http://localhost');
             // if it's localhost (invite link), don't open in new tab
             const targetAttr = isLocalhost ? '' : 'target="_blank" rel="noopener noreferrer"';
             return `<a href="${sanitizedUrl}" class="text-blue-500 hover:underline" ${targetAttr}>${sanitizedUrl}</a>`;
+        } else if (part.match(mentionRegex)) {
+            const username = part.slice(1); // Remove the '@' character
+            return `<span class="bg-dc-blurple text-white font-semibold">@${DOMPurify.sanitize(username)}</span>`;
         }
         return DOMPurify.sanitize(part);
         });
@@ -101,7 +135,7 @@ const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, i
   return (
     <>
         { isLoading ? <Loading /> : (
-            <div className='flex py-1 px-4 hover:bg-dc-600 relative group'>
+            <div className={`flex py-1 px-4 hover:bg-dc-600 relative group ${isMentioned ? 'bg-yellow-300/40' : ''}`}>
                 <div className='w-10 h-10 rounded-full overflow-hidden'>
                     <img src={ userData.icon } alt={ userId } className='w-full h-full object-cover' />
                 </div>

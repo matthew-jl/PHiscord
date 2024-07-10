@@ -35,6 +35,23 @@ const ChannelPage = () => {
     serverId = Array.isArray(serverId) ? serverId[0] : serverId;
     channelId = Array.isArray(channelId) ? channelId[0] : channelId;
 
+    const [currentUserName, setCurrentUserName] = useState(null);
+    useEffect(() => {
+        const fetchCurrentUserData = async () => {
+            if (!user || !serverId) return;
+            const serverMemberDoc = await getDoc(doc(db, 'serverMembers', serverId));
+            if (serverMemberDoc.exists()) {
+                if (serverMemberDoc.data()[user.uid].nickname && serverMemberDoc.data()[user.uid].nickname !== '') {
+                    setCurrentUserName(serverMemberDoc.data()[user.uid].nickname);
+                } else {
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    setCurrentUserName(userDoc.data().username);
+                }
+            }
+        }
+        fetchCurrentUserData();
+    }, [user])
+
     const [isLoading, setIsLoading] = useState(true);
     const [channelData, setChannelData] = useState(null);
     useEffect(() => {
@@ -216,7 +233,6 @@ const ChannelPage = () => {
                             <p className='text-sm text-primary/80'>This is the start of the #{ channelData.name } channel.</p>
                         </div>
                         <div className='space-y-2'>
-                            {/* <ChatMessage username='test' content='wassup'/> */}
                             { chat && chat.messages && chat.messages.map((message) => (
                                 <ChatMessage 
                                 key={message.timestamp}
@@ -229,6 +245,8 @@ const ChannelPage = () => {
                                 imageUrl={message?.imageUrl}
                                 fileUrl={message?.fileUrl}
                                 fileSize={message?.fileSize}
+                                currentUserName={currentUserName}
+                                currentServerId={serverId}
                                 />
                             )) }
                         </div>
