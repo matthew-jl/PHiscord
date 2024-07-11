@@ -12,6 +12,21 @@ import { ipcRenderer } from 'electron';
 import { IoDocumentSharp } from 'react-icons/io5';
 import { IoMdDownload } from 'react-icons/io';
 
+import {
+	RegExpMatcher,
+	TextCensor,
+	asteriskCensorStrategy,
+	englishDataset,
+	englishRecommendedTransformers,
+} from 'obscenity';
+
+const matcher = new RegExpMatcher({
+	...englishDataset.build(),
+	...englishRecommendedTransformers,
+});
+
+const censor = new TextCensor().setStrategy(asteriskCensorStrategy());
+
 type chatMessageProps = {
     userId: string;
     content: string;
@@ -22,8 +37,8 @@ type chatMessageProps = {
     imageUrl?: string;
     fileUrl?: string;
     fileSize?: string;
-    currentUserName: string;
-    currentServerId: string;
+    currentUserName?: string;
+    currentServerId?: string;
 }
 
 const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, imageUrl, fileUrl, fileSize, currentUserName, currentServerId }: chatMessageProps) => {
@@ -47,18 +62,20 @@ const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, i
                 if (userData.imageUrl) {
                     userImageDownloadUrl = await getDownloadURL(ref(storage, userData.imageUrl));
                 }
-                const serverMemberDoc = await getDoc(doc(db, 'serverMembers', currentServerId));
-                if (serverMemberDoc.exists()) {
-                    if (serverMemberDoc.data()[userId].nickname && serverMemberDoc.data()[userId].nickname !== '') {
-                        setUserData({
-                            username: serverMemberDoc.data()[userId].nickname,
-                            icon:userImageDownloadUrl,
-                        })
-                    } else {
-                        setUserData({
-                            username: userData.username,
-                            icon: userImageDownloadUrl,
-                        });
+                setUserData({
+                    username: userData.username,
+                    icon: userImageDownloadUrl,
+                });
+
+                if (currentServerId) {
+                    const serverMemberDoc = await getDoc(doc(db, 'serverMembers', currentServerId));
+                    if (serverMemberDoc.exists()) {
+                        if (serverMemberDoc.data()[userId].nickname && serverMemberDoc.data()[userId].nickname !== '') {
+                            setUserData({
+                                username: serverMemberDoc.data()[userId].nickname,
+                                icon:userImageDownloadUrl,
+                            })
+                        }
                     }
                 }
             }
@@ -106,6 +123,10 @@ const ChatMessage = ({ userId, content, timestamp, onDelete, onEdit, isEdited, i
     }, [content, currentUserName]);
 
     const createLinkMarkup = (text) => {
+        // censor improper text
+        const matches = matcher.getAllMatches(text);
+        text = censor.applyTo(text, matches);
+
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const mentionRegex = /@(\w+)/g;
         const parts = text.split(/(\s+)/).map((part, index) => {

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { v4 } from 'uuid';
+import { useRouter } from 'next/router';
 
 type FriendPageProps = {
     children: ReactNode;
@@ -22,6 +23,7 @@ const FriendPage = ({ children }: FriendPageProps) => {
     const [friends, setFriends] = useState([]);
     const [blockedFriends, setBlockedFriends] = useState([]);
     const user = useAuth();
+    const router = useRouter();
 
     const fetchFriendRequests = async () => {
         if (!user) return;
@@ -238,6 +240,7 @@ const FriendPage = ({ children }: FriendPageProps) => {
                                                     friendImageUrl={friend.friendImageUrl}
                                                     onRemoveFriend={handleRefresh}
                                                     user={user}
+                                                    router={router}
                                                 />
                                                 ))
                                             ) : (
@@ -309,7 +312,7 @@ type RequestItemProps = {
             <img src={senderImageUrl} alt={senderName} className='w-full h-full object-cover'/>
         </div>
         <div className='ml-4'>
-          <p className='text-primary font-semibold'>{senderName}</p>
+          <p className='text-primary'>{senderName}</p>
         </div>
         <div className='ml-auto flex space-x-2'>
           <Button variant='blurple' onClick={handleAccept}>Accept</Button>
@@ -343,7 +346,7 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
                 <img src={receiverImageUrl} alt={receiverName} className='w-full h-full object-cover'/>
             </div>
             <div className='ml-4'>
-                <p className='text-primary font-semibold'>{receiverName}</p>
+                <p className='text-primary'>{receiverName}</p>
             </div>
             <div className='ml-auto flex space-x-2'>
                 <Button variant='destructive' onClick={handleCancel}>Cancel Request</Button>
@@ -359,9 +362,10 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
     friendImageUrl: string;
     onRemoveFriend: () => void;
     user: any;
+    router: any;
   };
   
-  const FriendItem = ({ friendshipId, friendId, friendName, friendImageUrl, onRemoveFriend, user }: FriendItemProps) => {
+  const FriendItem = ({ friendshipId, friendId, friendName, friendImageUrl, onRemoveFriend, user, router }: FriendItemProps) => {
     const handleRemove = async () => {
       try {
         await deleteDoc(doc(db, 'friendships', friendshipId));
@@ -386,6 +390,46 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
           console.error('Error blocking friend:', error);
         }
       };
+
+    const handleMessage = async () => {
+      try {
+        const chatsRef = collection(db, 'chats');
+        const q = query(chatsRef, 
+            or( and( where('user1', '==', user.uid), where('user2', '==', friendId) ), 
+                and( where('user1', '==', friendId), where('user2', '==', user.uid) )
+            )
+        );
+        const qSnapshot = await getDocs(q);
+        let chatId;
+        if (qSnapshot.empty) {
+            // create new chat
+            chatId = 'chat' + v4();
+            await setDoc(doc(db, 'chats', chatId), {
+              user1: user.uid,
+              user2: friendId,
+              timestamp: serverTimestamp(),
+            });
+            // create chatMessages
+            await setDoc(doc(db, 'chatMessages', chatId), {});
+            // update users (both)
+            await updateDoc(doc(db, 'users', user.uid), {
+              [`chats.${chatId}`]: true,
+            });
+            await updateDoc(doc(db, 'users', friendId), {
+              [`chats.${chatId}`]: true,
+            });
+        } else {
+          // chat already exists
+            qSnapshot.forEach(async (doc) => {
+                chatId = doc.id;
+            });
+        }
+        // redirect to chat page
+        router.push(`/chats/${chatId}/ChatPage`);
+      } catch (error) {
+          console.error('Error messaging friend:', error)
+      }
+    }
   
     return (
       <div className='flex items-center p-4 bg-dc-900 rounded-md m-2'>
@@ -393,10 +437,10 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
           <img src={friendImageUrl} alt={friendName} className='w-full h-full object-cover' />
         </div>
         <div className='ml-4'>
-          <p className='text-primary font-semibold'>{friendName}</p>
+          <p className='text-primary'>{friendName}</p>
         </div>
         <div className='ml-auto flex space-x-2'>
-          <Button variant='blurple'>Message</Button>
+          <Button variant='blurple' onClick={handleMessage}>Message</Button>
           <Button variant='destructive' onClick={handleRemove}>Remove</Button>
           <Button variant='destructive' onClick={handleBlock}>Block</Button>
         </div>
@@ -441,7 +485,7 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
             <img src={friendImageUrl} alt={friendName} className='w-full h-full object-cover' />
             </div>
             <div className='ml-4'>
-            <p className='text-primary font-semibold'>{friendName}</p>
+            <p className='text-primary'>{friendName}</p>
             </div>
             <div className='ml-auto flex space-x-2'>
             <Button variant='destructive' onClick={handleUnblock}>Unblock</Button>

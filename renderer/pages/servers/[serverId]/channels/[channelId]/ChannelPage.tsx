@@ -19,6 +19,8 @@ import { v4 } from 'uuid';
 import { Label } from '@/components/ui/label';
 import { RiAttachment2 } from 'react-icons/ri';
 import { ref, uploadBytes } from 'firebase/storage';
+import { HiMiniSpeakerWave } from 'react-icons/hi2';
+import MediaRoom from '@/components/MediaRoom';
 
 const ChannelPage = () => {
     const { theme } = useTheme();
@@ -70,13 +72,15 @@ const ChannelPage = () => {
     // Read chat real-time
     const [chat, setChat] = useState(null);
     useEffect(() => {
+        if (!channelData) return;
+        else if (channelData.type !== 'text') return;
         const unSub = onSnapshot(doc(db, 'channelMessages', channelId), (doc) => {
             setChat(doc.data());
         });
         return () => {
             unSub();
         };
-    }, [router]);
+    }, [router, channelData]);
 
     // TODO: Scroll to bottom automatically
     // const scrollAreaRef = useRef(null);
@@ -143,6 +147,51 @@ const ChannelPage = () => {
             console.log('file/image not found');
         }
     }
+
+    const handleDrop = (event) => {
+        event.preventDefault();
+        const droppedFile = event.dataTransfer.files[0];
+        if (droppedFile) {
+            const fileUrl = URL.createObjectURL(droppedFile);
+            const fileType = droppedFile.type.startsWith('image') ? 'image' : 'file';
+            const fileSize = formatFileSize(droppedFile.size);
+            if (fileType === 'image') {
+                setFile({ 
+                    file: droppedFile, 
+                    type: fileType, 
+                    url: fileUrl, 
+                    uploadUrl: `chat-images/${droppedFile.name + v4()}`,
+                    size: fileSize 
+                });
+            } else {
+                setFile({
+                    type: fileType,
+                    file: droppedFile,
+                    url: fileUrl,
+                    uploadUrl: `chat-files/${droppedFile.name}`,
+                    size: fileSize,
+                })
+            }
+        }
+    };
+
+    const handleDragOver = (event) => {
+        event.preventDefault();
+    };
+
+    useEffect(() => {
+        return () => {
+            setText('');
+            setFile({
+                type: null,
+                file: null,
+                url: "",
+                uploadUrl: "",
+                size: null,
+            })
+        };
+    }, [router]);
+
     const handleSend = async () => {
         if (text === '' && !file.file) return;
         try {
@@ -216,96 +265,118 @@ const ChannelPage = () => {
             <div className="grow h-screen mx-60 bg-dc-700 flex flex-col">
                 {/* Chat Header */}
                 <div className='w-full min-h-12 shadow-md font-semibold flex items-center text-sm text-left px-4'>
-                    <FaHashtag className='text-dc-500'/>
+                    { channelData.type === 'text' && (
+                        <FaHashtag className='text-dc-500'/>
+                    )}
+                    { channelData.type === 'voice' && (
+                        <HiMiniSpeakerWave className='text-dc-500' />
+                    )}
                     <div className='grow pl-2'>
                         { channelData.name }
                     </div>
                 </div>
                 {/* Content */}
-                <ScrollArea className='h-full'>
-                    <div className='flex flex-col space-y-6 h-[685px]'>
-                        <div className='flex-1' />
-                        <div className='space-y-2 px-4'>
-                            <div className='bg-dc-900 rounded-full w-fit p-4'>
-                                <FaHashtag size={40} />
+                {/* Text Channel */}
+                { channelData.type === 'text' && (
+                <>
+                    <ScrollArea className='h-full'>
+                        <div className='flex flex-col space-y-6 h-[685px]'>
+                            <div className='flex-1' />
+                            <div className='space-y-2 px-4'>
+                                <div className='bg-dc-900 rounded-full w-fit p-4'>
+                                    <FaHashtag size={40} />
+                                </div>
+                                <p className='text-2xl font-bold'>Welcome to #{ channelData.name }!</p>
+                                <p className='text-sm text-primary/80'>This is the start of the #{ channelData.name } channel.</p>
                             </div>
-                            <p className='text-2xl font-bold'>Welcome to #{ channelData.name }!</p>
-                            <p className='text-sm text-primary/80'>This is the start of the #{ channelData.name } channel.</p>
+                            <div className='space-y-2'>
+                                { chat && chat.messages && chat.messages.map((message) => (
+                                    <ChatMessage 
+                                    key={message.timestamp}
+                                    userId={message.userId} 
+                                    content={message.content} 
+                                    timestamp={message.timestamp} 
+                                    onDelete={() => handleDelete(message)}
+                                    onEdit={(newContent) => handleEdit(message, newContent)}
+                                    isEdited={message?.isEdited}
+                                    imageUrl={message?.imageUrl}
+                                    fileUrl={message?.fileUrl}
+                                    fileSize={message?.fileSize}
+                                    currentUserName={currentUserName}
+                                    currentServerId={serverId}
+                                    />
+                                )) }
+                            </div>
+                            {/* <div ref={scrollAreaRef}></div> */}
                         </div>
-                        <div className='space-y-2'>
-                            { chat && chat.messages && chat.messages.map((message) => (
-                                <ChatMessage 
-                                key={message.timestamp}
-                                userId={message.userId} 
-                                content={message.content} 
-                                timestamp={message.timestamp} 
-                                onDelete={() => handleDelete(message)}
-                                onEdit={(newContent) => handleEdit(message, newContent)}
-                                isEdited={message?.isEdited}
-                                imageUrl={message?.imageUrl}
-                                fileUrl={message?.fileUrl}
-                                fileSize={message?.fileSize}
-                                currentUserName={currentUserName}
-                                currentServerId={serverId}
-                                />
-                            )) }
-                        </div>
-                        {/* <div ref={scrollAreaRef}></div> */}
+                    </ScrollArea>
+                    {/* Chat Input */}
+                    <div className='w-full h-fit px-4 pb-4 pt-2 relative flex space-x-2'>
+                        {/* Main Input */}
+                        <Input 
+                        className='bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0' 
+                        placeholder={`Message #${ channelData.name }`} 
+                        value={ text }
+                        onChange={ e => setText(e.target.value) }
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        />
+                        {/* Image Attachment */}
+                        <Label htmlFor='imageInput' className='absolute right-28 bottom-6 cursor-pointer'>
+                            <RiAttachment2 size={24}/>
+                        </Label>
+                        <Input
+                            type='file'
+                            id='imageInput'
+                            className='hidden'
+                            onChange={handleFile}
+                        />
+                        { file.file && (
+                            <div className='absolute right-16 bottom-16 w-60 h-fit bg-dc-900 rounded-md p-2 '>
+                                { file.type === 'image' && (
+                                    <>
+                                        <p className='text-xs'>Image selected: { file.file.name }</p>
+                                        <div className='w-52 h-52 mx-auto my-2'>
+                                            <img src={ file.url } alt={ file.file.name } className='w-full h-full object-contain'/>
+                                        </div>
+                                    </>
+                                )}
+                                { file.type === 'file' && (
+                                    <>
+                                        <p className='text-xs'>File selected: { file.file.name }</p>
+                                        <div className='w-52 h-52 mx-auto my-2 flex flex-col justify-center items-center'>
+                                            <IoDocumentSharp size={60}/>
+                                            <p className='text-sm'>{ file.size }</p>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        {/* Emoji Picker */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger className='absolute right-20 bottom-6'>
+                                <MdEmojiEmotions size={24} className='' />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent side='top' className='bg-transparent border-transparent shadow-none'>
+                                <EmojiPicker theme={ emojiPickerTheme } onEmojiClick={ handleEmoji }/>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button size='icon' variant='blurple' onClick={ handleSend }>
+                            <IoSend />
+                        </Button>
                     </div>
-                </ScrollArea>
-                {/* Chat Input */}
-                <div className='w-full h-fit px-4 pb-4 pt-2 relative flex space-x-2'>
-                    {/* Main Input */}
-                    <Input 
-                    className='bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0' 
-                    placeholder={`Message #${ channelData.name }`} 
-                    value={ text }
-                    onChange={ e => setText(e.target.value) }
-                    />
-                    {/* Image Attachment */}
-                    <Label htmlFor='imageInput' className='absolute right-28 bottom-6 cursor-pointer'>
-                        <RiAttachment2 size={24}/>
-                    </Label>
-                    <Input
-                        type='file'
-                        id='imageInput'
-                        className='hidden'
-                        onChange={handleFile}
-                    />
-                    { file.file && (
-                        <div className='absolute right-16 bottom-16 w-60 h-fit bg-dc-900 rounded-md p-2 '>
-                            { file.type === 'image' && (
-                                <>
-                                    <p className='text-xs'>Image selected: { file.file.name }</p>
-                                    <div className='w-52 h-52 mx-auto my-2'>
-                                        <img src={ file.url } alt={ file.file.name } className='w-full h-full object-contain'/>
-                                    </div>
-                                </>
-                            )}
-                            { file.type === 'file' && (
-                                <>
-                                    <p className='text-xs'>File selected: { file.file.name }</p>
-                                    <div className='w-52 h-52 mx-auto my-2 flex flex-col justify-center items-center'>
-                                        <IoDocumentSharp size={60}/>
-                                        <p className='text-sm'>{ file.size }</p>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    )}
-                    {/* Emoji Picker */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger className='absolute right-20 bottom-6'>
-                            <MdEmojiEmotions size={24} className='' />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent side='top' className='bg-transparent border-transparent shadow-none'>
-                            <EmojiPicker theme={ emojiPickerTheme } onEmojiClick={ handleEmoji }/>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Button size='icon' variant='blurple' onClick={ handleSend }>
-                        <IoSend />
-                    </Button>
-                </div>
+                </>
+                )}
+                {/* Voice Channel */}
+                { channelData.type === 'voice' && (
+                    <div className='w-full h-full'>
+                        <MediaRoom 
+                            chatId={channelId}
+                            audio={true}
+                            video={false}
+                        />
+                    </div>
+                )}
             </div>
         )}
     </ServerPage>

@@ -261,6 +261,46 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
             }
           }
 
+          const handleMessage = async () => {
+            try {
+              const chatsRef = collection(db, 'chats');
+              const q = query(chatsRef, 
+                  or( and( where('user1', '==', user.uid), where('user2', '==', uid) ), 
+                      and( where('user1', '==', uid), where('user2', '==', user.uid) )
+                  )
+              );
+              const qSnapshot = await getDocs(q);
+              let chatId;
+              if (qSnapshot.empty) {
+                  // create new chat
+                  chatId = 'chat' + v4();
+                  await setDoc(doc(db, 'chats', chatId), {
+                    user1: user.uid,
+                    user2: uid,
+                    timestamp: serverTimestamp(),
+                  });
+                  // create chatMessages
+                  await setDoc(doc(db, 'chatMessages', chatId), {});
+                  // update users (both)
+                  await updateDoc(doc(db, 'users', user.uid), {
+                    [`chats.${chatId}`]: true,
+                  });
+                  await updateDoc(doc(db, 'users', uid), {
+                    [`chats.${chatId}`]: true,
+                  });
+              } else {
+                // chat already exists
+                  qSnapshot.forEach(async (doc) => {
+                      chatId = doc.id;
+                  });
+              }
+              // redirect to chat page
+              router.push(`/chats/${chatId}/ChatPage`);
+            } catch (error) {
+                console.error('Error messaging friend:', error)
+            }
+          }
+
         return (
         <>
         <DropdownMenu>
@@ -296,7 +336,7 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         ) : (
                             <DropdownMenuItem onClick={handleRemoveFriendship}>Remove Friend</DropdownMenuItem>
                         ) }
-                        <DropdownMenuItem>Message</DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleMessage}>Message</DropdownMenuItem>
                     </>
                 )}
             </DropdownMenuContent>
@@ -415,7 +455,14 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         <div className='space-y-1'>
                             <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>voice channels</p>
                             { voiceChannelList.map((channel) => (
-                                <ChannelItem id={ channel.id } name={ channel.name } type={ channel.type } key={ channel.id }/>
+                                <ChannelItem 
+                                id={ channel.id } 
+                                name={ channel.name } 
+                                type={ channel.type } 
+                                key={ channel.id }
+                                onClick={() => router.push(`/servers/${serverId}/channels/${channel.id}/ChannelPage`)}
+                                active={ channelId == channel.id }
+                                />
                             ))}
                         </div>
                     )}
