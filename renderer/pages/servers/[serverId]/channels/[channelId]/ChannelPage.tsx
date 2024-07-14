@@ -11,7 +11,7 @@ import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { IoDocumentSharp, IoSend } from 'react-icons/io5';
+import { IoDocumentSharp, IoSearch, IoSend } from 'react-icons/io5';
 import { FaHashtag } from 'react-icons/fa';
 import ChatMessage from '@/components/ChatMessage';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -21,6 +21,8 @@ import { RiAttachment2 } from 'react-icons/ri';
 import { ref, uploadBytes } from 'firebase/storage';
 import { HiMiniSpeakerWave } from 'react-icons/hi2';
 import MediaRoom from '@/components/MediaRoom';
+import { Popover, PopoverContent } from '@/components/ui/popover';
+import { PopoverTrigger } from '@radix-ui/react-popover';
 
 const ChannelPage = () => {
     const { theme } = useTheme();
@@ -81,6 +83,17 @@ const ChannelPage = () => {
             unSub();
         };
     }, [router, channelData]);
+
+    // Search functionality
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const handleSearch = () => {
+        if (!chat || !chat.messages) return;
+        const results = chat.messages.filter(message => 
+            message.content.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setSearchResults(results);
+    };
 
     // TODO: Scroll to bottom automatically
     // const scrollAreaRef = useRef(null);
@@ -264,15 +277,53 @@ const ChannelPage = () => {
         { isLoading ? <Loading /> : (
             <div className="grow h-screen mx-60 bg-dc-700 flex flex-col">
                 {/* Chat Header */}
-                <div className='w-full min-h-12 shadow-md font-semibold flex items-center text-sm text-left px-4'>
+                <div className='w-full min-h-12 shadow-md flex items-center text-sm text-left px-4'>
                     { channelData.type === 'text' && (
                         <FaHashtag className='text-dc-500'/>
                     )}
                     { channelData.type === 'voice' && (
                         <HiMiniSpeakerWave className='text-dc-500' />
                     )}
-                    <div className='grow pl-2'>
+                    <div className='grow pl-2 font-semibold'>
                         { channelData.name }
+                    </div>
+                    {/* Search Bar */}
+                    <div className='relative ml-4 w-96'>
+                        <Input 
+                            placeholder='Search messages'
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className='bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0 text-sm h-8'
+                        />
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button size='icon' variant='blurple' onClick={handleSearch} className='absolute right-0 top-0 h-8 w-8'>
+                                    <IoSearch />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className='w-96 p-2 bg-dc-900' side='bottom' align='end'>
+                            {searchResults.length > 0 ? (
+                                searchResults.map((message, index) => (
+                                    <ChatMessage 
+                                        key={index}
+                                        userId={message.userId} 
+                                        content={message.content} 
+                                        timestamp={message.timestamp} 
+                                        onDelete={() => handleDelete(message)}
+                                        onEdit={(newContent) => handleEdit(message, newContent)}
+                                        isEdited={message?.isEdited}
+                                        imageUrl={message?.imageUrl}
+                                        fileUrl={message?.fileUrl}
+                                        fileSize={message?.fileSize}
+                                        currentUserName={currentUserName}
+                                        currentServerId={serverId}
+                                    />
+                                ))
+                            ) : (
+                                <p className='text-sm text-primary/80'>No results found</p>
+                            )}
+                        </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
                 {/* Content */}
@@ -357,7 +408,7 @@ const ChannelPage = () => {
                             <DropdownMenuTrigger className='absolute right-20 bottom-6'>
                                 <MdEmojiEmotions size={24} className='' />
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent side='top' className='bg-transparent border-transparent shadow-none'>
+                            <DropdownMenuContent align='end' side='top' sideOffset={5} alignOffset={-22} className='bg-transparent border-transparent shadow-none'>
                                 <EmojiPicker theme={ emojiPickerTheme } onEmojiClick={ handleEmoji }/>
                             </DropdownMenuContent>
                         </DropdownMenu>

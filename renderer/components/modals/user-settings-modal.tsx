@@ -38,6 +38,9 @@ import { Separator } from '../ui/separator'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth'
 import { ModeToggle } from '../mode-toggle'
+import { useToast } from '../ui/use-toast'
+import FontSizeSelector from '../font-size-selector'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '../ui/dropdown-menu'
 
 // make a schema using zod for the form
 const formSchema = z.object({
@@ -46,6 +49,8 @@ const formSchema = z.object({
     }),
     profilePicture: z.any().optional(),
     customStatus: z.string().optional(),
+    directMessages: z.string(),
+    calls: z.string(),
 });
 
 const reauthSchema = z.object({
@@ -64,6 +69,7 @@ const reauthSchema = z.object({
 });
 
 const UserSettingsModal = () => {
+    const { toast } = useToast();
     const user = useAuth();
     const { isOpen, onClose, type, data } = useModal();
     const isModalOpen = isOpen && type === "userSettings";
@@ -87,6 +93,8 @@ const UserSettingsModal = () => {
         form.reset({
             username: userData?.username,
             customStatus: userData?.customStatus,
+            directMessages: userData?.privacySettings?.directMessages || 'allow',
+            calls: userData?.privacySettings?.calls || 'allow',
         })
     }, [isOpen, user]);
 
@@ -103,6 +111,8 @@ const UserSettingsModal = () => {
             username: "",
             profilePicture: null,
             customStatus: "",
+            directMessages: 'allow',
+            calls: 'allow',
         }
     });
     const reauthForm = useForm({
@@ -120,9 +130,17 @@ const UserSettingsModal = () => {
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         console.log(values);
 
+        if (!values.customStatus) {
+            values.customStatus = '';
+        }
+
         const updates: any = {
             username: values.username,
             customStatus: values.customStatus,
+            privacySettings: {
+                directMessages: values.directMessages,
+                calls: values.calls,
+            }
         };
 
         if (values.profilePicture) {
@@ -134,7 +152,9 @@ const UserSettingsModal = () => {
 
         await updateDoc(doc(db, 'users', user.uid), updates);
 
-        alert('Successfully updated user information');
+        toast({
+            description: 'Successfully updated user information.'
+        })
 
         handleClose();
 
@@ -148,12 +168,16 @@ const UserSettingsModal = () => {
             await reauthenticateWithCredential(user, credential);
             await updatePassword(user, values.newPassword);
 
-            alert('Password updated successfully');
+            toast({
+                description: 'Password updated successfully.'
+              })
             handleClose();
             router.reload();
         } catch (error) {
             console.error("Reauthentication failed: ", error);
-            alert('Reauthentication failed. Please try again.');
+            toast({
+                description: 'Reauthentication failed. Please try again.'
+            })
             reauthForm.reset();
         }
     };
@@ -163,6 +187,14 @@ const UserSettingsModal = () => {
             setProfilePicture(URL.createObjectURL(e.target.files[0]));
             form.setValue('profilePicture', e.target.files[0]);
         }
+    };
+
+    const handleDirectMessagesChange = (value: 'allow' | 'request' | 'block') => {
+        form.setValue('directMessages', value);
+    };
+
+    const handleCallsChange = (value: 'allow' | 'block') => {
+        form.setValue('calls', value);
     };
 
     return (
@@ -356,16 +388,108 @@ const UserSettingsModal = () => {
                         </div>
                     </TabsContent>
                     <TabsContent value='appearance' className='h-fit'>
-                        <div className='bg-dc-800 w-full h-full rounded-lg p-4'>
+                        <div className='bg-dc-800 w-full h-full rounded-lg p-4 space-y-4'>
                             <p className='text-xs font-semibold text-primary uppercase'>Change Theme</p>
                             <ModeToggle />
+                            <p className='text-xs font-semibold text-primary uppercase'>Change Font Size</p>
+                            <FontSizeSelector />
                         </div>
                     </TabsContent>
                     <TabsContent value='overlay' className='h-fit'>
-                        <div className='bg-dc-800 w-full h-full rounded-lg p-4'>OVerlay</div>
+                        <div className='bg-dc-800 w-full h-full rounded-lg p-4'>Coming soon!</div>
                     </TabsContent>
                     <TabsContent value='privacy' className='h-fit'>
-                        <div className='bg-dc-800 w-full h-full rounded-lg p-4'>privacy</div>
+                        <div className='bg-dc-800 w-full h-full rounded-lg p-4'>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+                                <FormField
+                                    control={form.control}
+                                    name="directMessages"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className='text-xs font-semibold text-primary uppercase'>
+                                                <p>
+                                                    Direct Messages
+                                                </p>
+                                            </FormLabel>
+                                            <FormControl>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger>
+                                                        <Button variant="outline" className="w-full">
+                                                            {field.value.charAt(0).toUpperCase() + field.value.slice(1)}
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent side='right'>
+                                                        <DropdownMenuCheckboxItem
+                                                            onClick={() => handleDirectMessagesChange('allow')}
+                                                            checked={field.value === 'allow'}
+                                                        >
+                                                            Allow
+                                                        </DropdownMenuCheckboxItem>
+                                                        <DropdownMenuCheckboxItem
+                                                            onClick={() => handleDirectMessagesChange('request')}
+                                                            checked={field.value === 'request'}
+                                                        >
+                                                            Request
+                                                        </DropdownMenuCheckboxItem>
+                                                        <DropdownMenuCheckboxItem
+                                                            onClick={() => handleDirectMessagesChange('block')}
+                                                            checked={field.value === 'block'}
+                                                        >
+                                                            Block
+                                                        </DropdownMenuCheckboxItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </FormControl>
+                                            <FormMessage className='text-red-500' />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="calls"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className='text-xs font-semibold text-primary uppercase'>
+                                                <p>
+                                                    Voice & Video Calls
+                                                </p>
+                                            </FormLabel>
+                                            <FormControl>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger>
+                                                        <Button variant="outline" className="w-full">
+                                                            {field.value.charAt(0).toUpperCase() + field.value.slice(1)}
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent side='right'>
+                                                        <DropdownMenuCheckboxItem
+                                                            onClick={() => handleCallsChange('allow')}
+                                                            checked={field.value === 'allow'}
+                                                        >
+                                                            Allow
+                                                        </DropdownMenuCheckboxItem>
+                                                        <DropdownMenuCheckboxItem
+                                                            onClick={() => handleCallsChange('block')}
+                                                            checked={field.value === 'block'}
+                                                        >
+                                                            Block
+                                                        </DropdownMenuCheckboxItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </FormControl>
+                                            <FormMessage className='text-red-500' />
+                                        </FormItem>
+                                    )}
+                                />
+                                <div>
+                                    <Button disabled={isLoading} variant='blurple' className='mt-2'>
+                                            Save Changes
+                                    </Button>
+                                </div>
+                            </form>
+                        </Form>
+                        </div>
                     </TabsContent>
                 </Tabs>
             </DialogContent>

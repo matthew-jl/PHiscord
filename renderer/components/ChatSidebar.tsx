@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { doc, getDoc, onSnapshot } from '@firebase/firestore';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { db, storage } from '@/lib/firebaseConfig';
+import { Input } from './ui/input';
 
 const ChatSidebar = () => {
     const user = useAuth();
@@ -13,6 +14,7 @@ const ChatSidebar = () => {
     const { chatId } = router.query;
     const friendsIsActive = router.pathname === '/chats/FriendPage';
     const [chats, setChats] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         if (!user) return;
@@ -63,6 +65,10 @@ const ChatSidebar = () => {
         return () => unsubscribe();
     }, [user]);
 
+    const filteredChats = chats.filter(chat => 
+        chat.username.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
   return (
     <>
         {/* Left Sidebar */}
@@ -81,7 +87,13 @@ const ChatSidebar = () => {
                     </div>
                     <div className='space-y-1'>
                         <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>direct messages</p>
-                        {chats.map((chat) => (
+                        <Input 
+                            placeholder='Search conversations'
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className='bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0 text-sm mb-2'
+                        />
+                        {filteredChats.map((chat) => (
                                 <ChatItem
                                     key={chat.chatId}
                                     chatId={chat.chatId}

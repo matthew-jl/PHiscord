@@ -17,8 +17,9 @@ type ServerPageProps = {
 const ServerPage = ({ children }: ServerPageProps) => {
     const user = useAuth();
     const router = useRouter();
-    const { serverId } = router.query;
+    const { serverId, channelId } = router.query;
     const activeServerId = Array.isArray(serverId) ? serverId[0] : serverId;
+    const activeChannelId = Array.isArray(channelId) ? channelId[0] : channelId;
 
     const [isLoading, setIsLoading] = useState(true);
 
@@ -117,6 +118,18 @@ const ServerPage = ({ children }: ServerPageProps) => {
                     const channels = await Promise.all(channelPromises);
                     setChannelData(channels.filter(channel => channel !== null));
                     console.log(channels);
+                    if (!activeChannelId) {
+                        const textChannelList = [];
+                        channels.forEach((channel: any) => {
+                            if (channel.type === 'text') {
+                            textChannelList.push(channel);
+                            }
+                        });
+                        textChannelList.sort((a, b) => a.name.localeCompare(b.name));
+                        if (textChannelList.length > 0) {
+                            router.push(`/servers/${activeServerId}/channels/${textChannelList[0].id}/ChannelPage`);
+                        }
+                      }
                 } else {
                     console.log('failed to fetch serverChannels data');
                 }
@@ -133,7 +146,7 @@ const ServerPage = ({ children }: ServerPageProps) => {
                 {isLoading ? (
                     <Loading />
                 ) : (
-                    <div className="w-full h-screen flex pl-16 relative bg-red-900">
+                    <div className="w-full h-screen flex pl-16 relative bg-dc-700">
                         <ServerSidebar 
                             serverData={ serverData } 
                             serverMemberData = { serverMemberData } 

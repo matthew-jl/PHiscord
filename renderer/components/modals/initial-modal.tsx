@@ -30,6 +30,7 @@ import { v4 } from 'uuid'
 import { Timestamp, doc, serverTimestamp, setDoc, updateDoc } from '@firebase/firestore'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useRouter } from 'next/router'
+import { useToast } from '../ui/use-toast'
 
 // make a schema using zod for the form
 const formSchema = z.object({
@@ -40,6 +41,7 @@ const formSchema = z.object({
 });
 
 const InitialModal = () => {
+  const { toast } = useToast();
   const router = useRouter();
   const user = useAuth();
   // upload image to firebase storage with randomized name
@@ -149,7 +151,9 @@ const InitialModal = () => {
     const name = values.name;
     await createServer(id, name, imageUrl);
 
-    alert('successfully created server');
+    toast({
+      description: 'Successfully created a server.'
+    })
     
     handleClose();
 

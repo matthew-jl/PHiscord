@@ -14,9 +14,10 @@ import { and, collection, deleteDoc, deleteField, doc, getDoc, getDocs, or, quer
 import { db } from '@/lib/firebaseConfig';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { v4 } from 'uuid';
-import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { useToast } from './ui/use-toast';
 
 type serverSidebarProps = {
     serverData: any,
@@ -28,6 +29,7 @@ type serverSidebarProps = {
 }
 
 const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRole, channelData, serverChannelData }: serverSidebarProps) => {
+    const { toast } = useToast();
     const { onOpen } = useModal();
     const user = useAuth();
     const router = useRouter();
@@ -135,6 +137,76 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
         }
     };
 
+    const onDelete = async () => {
+        try {
+            // Fetch all channels for the server
+            const serverChannelsRef = doc(db, 'serverChannels', serverId);
+            const serverChannelsSnap = await getDoc(serverChannelsRef);
+            const serverChannelsData = serverChannelsSnap.data();
+
+            if (!serverChannelsData) {
+                throw new Error (`No channels found for server ${serverId}`);
+            }
+
+            const channelIds = Object.keys(serverChannelsData);
+
+            // Delete all channels and their messages
+            for (const channelId of channelIds) {
+                const channelsSnap = await getDoc(doc(db, 'channels', channelId));
+                if (channelsSnap.exists() && channelsSnap.data().type === 'text') {
+                    await deleteDoc(doc(db, 'channelMessages', channelId));
+                }
+                await deleteDoc(doc(db, 'channels', channelId));
+            }
+
+            // Fetch all server members
+            const serverMemberRef = doc(db, 'serverMembers', serverId);
+            const serverMemberSnap = await getDoc(serverMemberRef);
+            const serverMemberData = serverMemberSnap.data();
+
+            // Update the users collection for each member
+            for (const userId in serverMemberData) {
+                const userRef = doc(db, 'users', userId);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    if (userData.servers && userData.servers[serverId]) {
+                        const updatedServers = { ...userData.servers };
+                        delete updatedServers[serverId];
+                        await updateDoc(userRef, { servers: updatedServers });
+                        console.log(`Server ID ${serverId} removed from user ${userId}'s servers field`);
+                    }
+                }
+            }
+
+            // Delete server document
+            await deleteDoc(doc(db, 'servers', serverId));
+            // Delete server members document
+            await deleteDoc(doc(db, 'serverMembers', serverId));
+            // Delete server channels document
+            await deleteDoc(doc(db, 'serverChannels', serverId));
+
+            console.log(`Server ${serverId} and all associated data successfully deleted`);
+            toast({
+                description: 'Server successfully deleted.'
+            });
+            router.push('/home');
+        } catch (error) {
+            console.error("Error deleting server: ", error);
+        }
+    };
+
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+    const handleDeleteClick = () => {
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        setIsDeleteDialogOpen(false);
+        onDelete();
+    };
+
     const sendFriendRequest = async (senderId, receiverId) => {
         // friendships
         const friendshipId = 'friendship' + v4();
@@ -145,7 +217,9 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
             timestamp: serverTimestamp(),
         });
         console.log('friend request sent');
-        alert('successfully sent friend request');
+        toast({
+            description: 'Successfully sent a friend request.'
+        })
     }
 
     const removeFriendRequest = async (senderId, receiverId) => {
@@ -160,7 +234,9 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
             await deleteDoc(doc.ref);
         });
         console.log('friend request removed');
-        alert('successfully removed friend request');
+        toast({
+            description: 'Successfully cancelled friend request.'
+        })
     }
 
     const friendRequestExists = async (senderId, receiverId) => {
@@ -204,7 +280,9 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
         qSnapshot.forEach(async (doc) => {
             await deleteDoc(doc.ref);
         });
-        alert('successfully removed friend');
+        toast({
+            description: 'Successfully removed friend.'
+        })
     }
 
     type memberItemProps = {
@@ -254,7 +332,9 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                 [`${uid}.nickname`]: newNickname
               });
               setIsNicknameModalOpen(false);
-              alert('Nickname updated successfully');
+              toast({
+                description: 'Successfully updated nickname.'
+              })
               router.reload();
             } catch (error) {
               console.error('Error updating nickname:', error);
@@ -426,13 +506,28 @@ const ServerSidebar = ({ serverData, serverMemberData, usersData, currentUserRol
                         </DropdownMenuItem>
                     )}
                     { isOwner && (
-                        <DropdownMenuItem className='text-red-500'>
-                            Delete Server
-                            <MdDelete className='ml-auto'/>
-                        </DropdownMenuItem>
+                        <>
+                            <DropdownMenuItem className='text-red-500' onClick={handleDeleteClick}>
+                                Delete Server
+                                <MdDelete className='ml-auto'/>
+                            </DropdownMenuItem>
+                        </>
                     )}
                 </DropdownMenuContent>
             </DropdownMenu>
+            {/* Confirm Delete Server Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className='bg-dc-800'>
+                    <DialogTitle>Confirm Delete Server</DialogTitle>
+                    <DialogDescription>
+                        Are you sure you want to delete this server? This action cannot be undone.
+                    </DialogDescription>
+                    <DialogFooter>
+                        <Button variant='destructive' onClick={handleDeleteConfirm}>Delete</Button>
+                        <Button variant='outline' onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             {/* Channels */}
             <ScrollArea className='h-full pb-12'>
                 <div className='flex flex-col px-2 py-3 space-y-4'>

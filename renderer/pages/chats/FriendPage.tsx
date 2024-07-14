@@ -11,6 +11,8 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { v4 } from 'uuid';
 import { useRouter } from 'next/router';
+import { useToast } from '@/components/ui/use-toast';
+import { Input } from '@/components/ui/input';
 
 type FriendPageProps = {
     children: ReactNode;
@@ -104,6 +106,10 @@ const FriendPage = ({ children }: FriendPageProps) => {
                 if (friendData.imageUrl) {
                   friendImageUrl = await getDownloadURL(ref(storage, friendData.imageUrl));
                 }
+                // check if current user is blocked by their friend
+                if (friendData.blocks && friendData.blocks[user.uid]) {
+                  return null;
+                }
                 return {
                   id: document.id,
                   friendId: friendId,
@@ -179,6 +185,7 @@ const FriendPage = ({ children }: FriendPageProps) => {
                                     <TabsTrigger value="online">Online</TabsTrigger>
                                     <TabsTrigger value="all">All</TabsTrigger>
                                     <TabsTrigger value="blocked">Blocked</TabsTrigger>
+                                    <TabsTrigger value="add">Add Friend</TabsTrigger>
                                 </TabsList>
                             </div>
                             {/* Content */}
@@ -267,6 +274,9 @@ const FriendPage = ({ children }: FriendPageProps) => {
                                             )}
                                         </div>
                                     </TabsContent>
+                                    <TabsContent value='add'>
+                                      <AddFriendForm user={user} onAddFriend={handleRefresh} />
+                                    </TabsContent>
                                 </div>
                             </ScrollArea>
                         </Tabs>
@@ -286,12 +296,16 @@ type RequestItemProps = {
   };
   
   const RequestItem = ({ requestId, senderId, senderName, senderImageUrl, onRequestAction }: RequestItemProps) => {
+    const { toast } = useToast();
     const handleAccept = async () => {
       try {
         await updateDoc(doc(db, 'friendships', requestId), {
           accepted: true,
         });
         onRequestAction();
+        toast({
+          description: 'Successfully accepted friend request.'
+        })
       } catch (error) {
         console.error('Error accepting friend request:', error);
       }
@@ -301,6 +315,9 @@ type RequestItemProps = {
       try {
         await deleteDoc(doc(db, 'friendships', requestId));
         onRequestAction();
+        toast({
+          description: 'Successfully rejected friend request.'
+        })
       } catch (error) {
         console.error('Error rejecting friend request:', error);
       }
@@ -331,10 +348,14 @@ type OutgoingRequestItemProps = {
 };
 
 const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImageUrl, onRequestAction }: OutgoingRequestItemProps) => {
+    const { toast } = useToast();
     const handleCancel = async () => {
         try {
             await deleteDoc(doc(db, 'friendships', requestId));
             onRequestAction();
+            toast({
+              description: 'Successfully cancelled friend request.'
+            })
         } catch (error) {
             console.error('Error canceling friend request:', error);
         }
@@ -366,10 +387,14 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
   };
   
   const FriendItem = ({ friendshipId, friendId, friendName, friendImageUrl, onRemoveFriend, user, router }: FriendItemProps) => {
+    const { toast } = useToast();
     const handleRemove = async () => {
       try {
         await deleteDoc(doc(db, 'friendships', friendshipId));
         onRemoveFriend();
+        toast({
+          description: 'Successfully removed friend.'
+        })
       } catch (error) {
         console.error('Error removing friend:', error);
       }
@@ -386,6 +411,9 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
             [`blocks.${friendId}`]: true
           })
           onRemoveFriend();
+          toast({
+            description: 'Successfully blocked user.'
+          })
         } catch (error) {
           console.error('Error blocking friend:', error);
         }
@@ -458,6 +486,7 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
   };
   
     const BlockedFriendItem = ({ blockId, friendId, friendName, friendImageUrl, onUnblock, user }: BlockedFriendItemProps) => {
+        const { toast } = useToast();
         const handleUnblock = async () => {
             try {
                 await deleteDoc(doc(db, 'blocks', blockId));
@@ -474,6 +503,9 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
                 }
 
                 onUnblock();
+                toast({
+                  description: 'Successfully unblocked user.'
+                })
             } catch (error) {
                 console.error('Error unblocking friend:', error);
             }
@@ -493,5 +525,82 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
         </div>
         );
     };
+
+const AddFriendForm = ({ user, onAddFriend }) => {
+  const { toast } = useToast();
+  const [username, setUsername] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAddFriend = async () => {
+      if (!username) {
+          toast({
+              description: "Please enter a username.",
+          });
+          return;
+      }
+
+      setIsSubmitting(true);
+
+      try {
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('username', '==', username));
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+              toast({
+                  description: "User not found.",
+                  variant: 'destructive'
+              });
+          } else {
+              const receiverId = querySnapshot.docs[0].id;
+
+              if (receiverId === user.uid) {
+                  toast({
+                      description: "You cannot add yourself as a friend.",
+                      variant: 'destructive'
+                  });
+              } else {
+                  const friendshipId = 'friendship' + v4();
+                  await setDoc(doc(db, 'friendships', friendshipId), {
+                      accepted: false,
+                      user1: user.uid,
+                      user2: receiverId,
+                      timestamp: serverTimestamp(),
+                  });
+
+                  toast({
+                      description: "Friend request sent successfully.",
+                  });
+
+                  onAddFriend();
+              }
+          }
+      } catch (error) {
+          console.error("Error sending friend request:", error);
+          toast({
+              description: "Error sending friend request. Please try again.",
+          });
+      }
+
+      setIsSubmitting(false);
+      setUsername("");
+  };
+
+  return (
+      <div className="flex flex-col space-y-4 p-4">
+          <Input
+              placeholder="Enter username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={isSubmitting}
+              className='bg-dc-900 focus-visible:ring-0 focus-visible:ring-offset-0'
+          />
+          <Button variant='blurple' onClick={handleAddFriend} disabled={isSubmitting}>
+              {isSubmitting ? "Sending..." : "Send Friend Request"}
+          </Button>
+      </div>
+  );
+};
+  
 
 export default FriendPage

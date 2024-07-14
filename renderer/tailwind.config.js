@@ -16,7 +16,6 @@ module.exports = {
         },
         extend: {
             colors: {
-
                 // discord colors
                 dc: {
                     blurple: '#5865F2',
@@ -86,5 +85,19 @@ module.exports = {
             },
         },
     },
-    plugins: [require("tailwindcss-animate")],
+    plugins: [
+        require("tailwindcss-animate"),
+        function({ addUtilities }) {
+            const newUtilities = {
+              '.font-scale-small': {
+                '--tw-font-size': 'calc(1rem * 0.875)', // 12.5% smaller
+              },
+              '.font-scale-large': {
+                '--tw-font-size': 'calc(1rem * 1.125)', // 12.5% larger
+              },
+            };
+        
+        addUtilities(newUtilities, ['responsive', 'hover']);
+        }
+    ],
 };

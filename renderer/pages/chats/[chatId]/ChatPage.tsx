@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/components/ui/use-toast';
 import { db, storage } from '@/lib/firebaseConfig';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { arrayRemove, arrayUnion, doc, getDoc, onSnapshot, serverTimestamp, updateDoc } from '@firebase/firestore';
@@ -15,7 +17,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
-import { IoDocumentSharp, IoSend } from 'react-icons/io5';
+import { IoDocumentSharp, IoSearch, IoSend } from 'react-icons/io5';
 import { MdEmojiEmotions } from 'react-icons/md';
 import { RiAttachment2 } from 'react-icons/ri';
 import { v4 } from 'uuid';
@@ -38,6 +40,8 @@ const ChatPage = () => {
       size: null,
   });
   const [targetUserData, setTargetUserData] = useState(null);
+  const [blockExists, setBlockExists] = useState(false);
+  const { toast } = useToast();
 
   const { theme } = useTheme();
   let emojiPickerTheme = Theme.AUTO;
@@ -70,6 +74,10 @@ const ChatPage = () => {
           username: otherUserData.username,
           imageUrl: otherUserImageUrl,
         })
+
+        if (otherUserData.blocks && otherUserData.blocks[user.uid]) {
+            setBlockExists(true);
+        }
         setIsLoading(false);
     };
     fetchTargetData();
@@ -82,9 +90,14 @@ const ChatPage = () => {
         if (userDoc.exists()) {
             setCurrentUserName(userDoc.data().username);
         }
+        
+        if (!targetUserData) return;
+        if (userDoc.data().blocks && userDoc.data().blocks[targetUserData.uid]) {
+            setBlockExists(true);
+        }
     };
     fetchCurrentUserName();
-  }, [user]);
+  }, [user, targetUserData]);
   
   useEffect(() => {
     const unSub = onSnapshot(doc(db, 'chatMessages', chatId), (doc) => {
@@ -97,6 +110,17 @@ const ChatPage = () => {
 
   const handleEmoji = (e) => {
       setText((prev) => prev + e.emoji);
+  };
+
+  // Search functionality
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const handleSearch = () => {
+      if (!chat || !chat.messages) return;
+      const results = chat.messages.filter(message => 
+          message.content.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setSearchResults(results);
   };
 
   const formatFileSize = (size) => {
@@ -182,6 +206,23 @@ const ChatPage = () => {
   }, [router]);
 
   const handleSend = async () => {
+    if (blockExists) {
+        // toast to indicate block exists
+        toast({
+            title: "Cannot send message",
+            description: "You blocked, or have been blocked, by the other user.",
+            variant: 'destructive',
+        })
+        setText('');
+        setFile({
+            type: null,
+            file: null,
+            url: '',
+            uploadUrl: '',
+            size: null,
+        });
+        return;
+    }
     if (text === '' && !file.file) return;
     try {
         if (file.file) {
@@ -259,11 +300,48 @@ const handleEdit = async (message, newContent) => {
           <ChatSidebar />
           <div className="grow h-screen ml-60 bg-dc-700 flex flex-col">
               {/* Chat Header */}
-              <div className='w-full min-h-12 shadow-md font-semibold flex items-center text-sm text-left px-4'>
+              <div className='w-full min-h-12 shadow-md flex items-center text-sm text-left px-4'>
                 <div className='bg-dc-900 rounded-full w-8 h-8 overflow-hidden'>
                     <img src={ targetUserData.imageUrl } alt={ targetUserData.uid } className='w-full h-full object-cover'/>
                 </div>
-                <p className='pl-4'>{ targetUserData.username }</p>
+                <p className='grow pl-4 font-semibold '>{ targetUserData.username }</p>
+                {/* Search Bar */}
+                <div className='relative ml-4 w-96'>
+                        <Input 
+                            placeholder='Search messages'
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className='bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0 text-sm h-8'
+                        />
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button size='icon' variant='blurple' onClick={handleSearch} className='absolute right-0 top-0 h-8 w-8'>
+                                    <IoSearch />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className='w-96 p-2 bg-dc-900' side='bottom' align='end'>
+                            {searchResults.length > 0 ? (
+                                searchResults.map((message, index) => (
+                                    <ChatMessage 
+                                        key={index}
+                                        userId={message.userId} 
+                                        content={message.content} 
+                                        timestamp={message.timestamp} 
+                                        onDelete={() => handleDelete(message)}
+                                        onEdit={(newContent) => handleEdit(message, newContent)}
+                                        isEdited={message?.isEdited}
+                                        imageUrl={message?.imageUrl}
+                                        fileUrl={message?.fileUrl}
+                                        fileSize={message?.fileSize}
+                                        currentUserName={currentUserName}
+                                    />
+                                ))
+                            ) : (
+                                <p className='text-sm text-primary/80'>No results found</p>
+                            )}
+                        </PopoverContent>
+                        </Popover>
+                    </div>
               </div>
               {/* Content */}
               <ScrollArea className='h-full'>
@@ -338,7 +416,7 @@ const handleEdit = async (message, newContent) => {
                     <DropdownMenuTrigger className="absolute right-20 bottom-6">
                         <MdEmojiEmotions size={24} />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent side="top" className="bg-transparent border-transparent shadow-none">
+                    <DropdownMenuContent align='end' side='top' sideOffset={5} alignOffset={-22} className="bg-transparent border-transparent shadow-none">
                         <EmojiPicker theme={emojiPickerTheme} onEmojiClick={handleEmoji} />
                     </DropdownMenuContent>
                 </DropdownMenu>

@@ -29,6 +29,7 @@ import { doc, updateDoc, getDoc } from '@firebase/firestore'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useRouter } from 'next/router'
 import { v4 } from 'uuid'
+import { useToast } from '../ui/use-toast'
 
 // make a schema using zod for the form
 const formSchema = z.object({
@@ -39,6 +40,7 @@ const formSchema = z.object({
 });
 
 const EditServerModal = () => {
+    const { toast } = useToast();
     const router = useRouter();
     let { serverId } = router.query;
     serverId = Array.isArray(serverId) ? serverId[0] : serverId;
@@ -120,7 +122,9 @@ const EditServerModal = () => {
         const name = values.name;
         await editServer(name, imageUrl);
 
-        alert('successfully edited server');
+        toast({
+            description: 'Successfully edited server.'
+        })
 
         handleClose();
 

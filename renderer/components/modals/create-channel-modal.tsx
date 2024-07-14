@@ -33,6 +33,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group'
 import { Label } from '../ui/label'
 import { FaHashtag } from 'react-icons/fa'
 import { HiMiniSpeakerWave } from 'react-icons/hi2'
+import { useToast } from '../ui/use-toast'
 
 // make a schema using zod for the form
 const formSchema = z.object({
@@ -45,6 +46,7 @@ const formSchema = z.object({
 });
 
 const CreateChannelModal = () => {
+    const { toast } = useToast();
     const router = useRouter();
     let { serverId } = router.query;
     serverId = Array.isArray(serverId) ? serverId[0] : serverId;
@@ -99,7 +101,9 @@ const CreateChannelModal = () => {
         const type = values.type;
         createChannel(name, type);
         
-        alert('successfully created a channel');
+        toast({
+            description: 'Successfully created a new channel.'
+        })
         handleClose();
         router.reload();
     }

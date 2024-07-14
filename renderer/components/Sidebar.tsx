@@ -1,7 +1,6 @@
 import React, { ReactNode, useEffect, useState } from 'react'
-import { IconType } from 'react-icons'
 import { IoMdAdd } from "react-icons/io"
-import { FaCompass, FaHeadphonesAlt, FaMicrophone } from "react-icons/fa";
+import { FaHeadphonesAlt, FaMicrophone } from "react-icons/fa";
 import { ModeToggle } from './mode-toggle';
 import ThemeImage from './theme-image';
 import { Separator } from './ui/separator';
@@ -85,8 +84,8 @@ const Sidebar = ({ activeServerId, chatIsActive }: { activeServerId?: string, ch
       <div className="fixed top-0 left-0 h-screen w-16 bg-dc-900 text-primary shadow-md flex flex-col z-50" suppressHydrationWarning>
 
         <div className="flex flex-col items-center">
-          <Link href='/home'>home</Link>
-          <SidebarIconTheme icon= { <ModeToggle/> } tooltip="Change Theme"/>
+          {/* <Link href='/home'>home</Link> */}
+          {/* <SidebarIconTheme icon= { <ModeToggle/> } tooltip="Change Theme"/> */}
           <SidebarIconDM 
           icon={ 
             <ThemeImage srcLight="\images\discord-mark-black.png" srcDark='\images\discord-mark-white.png' alt="discord mark" width="27" height="27"/>
@@ -115,7 +114,6 @@ const Sidebar = ({ activeServerId, chatIsActive }: { activeServerId?: string, ch
               ))}
 
               <SidebarIcon icon={ <IoMdAdd size="27"/> } tooltip="Add a Server" onClick={() => onOpen('createServer')}/>
-              <SidebarIcon icon={ <FaCompass size="27"/> } tooltip="Explore Servers"/>
           </div>
         </ScrollArea>
       </div>

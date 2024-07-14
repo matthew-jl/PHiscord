@@ -33,6 +33,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group'
 import { Label } from '../ui/label'
 import { FaHashtag } from 'react-icons/fa'
 import { HiMiniSpeakerWave } from 'react-icons/hi2'
+import { useToast } from '../ui/use-toast'
 
 // make a schema using zod for the form
 const formSchema = z.object({
@@ -42,6 +43,7 @@ const formSchema = z.object({
 });
 
 const EditChannelModal = () => {
+    const { toast } = useToast();
     const router = useRouter();
     let { serverId, channelId } = router.query;
     serverId = Array.isArray(serverId) ? serverId[0] : serverId;
@@ -91,7 +93,9 @@ const EditChannelModal = () => {
         const name = values.name;
         editChannel(name);
         
-        alert('successfully edited channel name');
+        toast({
+            description: 'Successfully edited channel name.'
+          })
 
         handleClose();
 
@@ -113,7 +117,9 @@ const EditChannelModal = () => {
         const channelsRef = doc(db, 'channels', channelId);
         await deleteDoc(channelsRef);
 
-        alert('deleted channel successfully');
+        toast({
+            description: 'Successfully deleted channel.'
+        })
         handleClose();
         router.push(`/servers/${serverId}/ServerPage`);
     }

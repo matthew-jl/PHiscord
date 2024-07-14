@@ -39,13 +39,13 @@ const formSchema = z.object({
   path: ["confirmPassword"],
 });
 
-const registerPage = () => {
+const RegisterPage = () => {
   const router = useRouter();
   const isAuthenticated = useAuth();
   const [error, setError] = useState('');
   
   if (isAuthenticated) {
-    router.push('/home');
+    router.push('/chats/FriendPage');
   }
 
   // Use form hook with zod validation
@@ -72,7 +72,7 @@ const registerPage = () => {
       };
       await setDoc(doc(db, "users", user.uid), data);
 
-      router.push('/home');
+      router.push('/chats/FriendPage');
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
             setError('An account with this email already exists.');
@@ -157,4 +157,4 @@ const registerPage = () => {
   );
 }
 
-export default registerPage;
+export default RegisterPage;

@@ -23,7 +23,7 @@ const LoginPage = () => {
   const router = useRouter();
 
   if (isAuthenticated) {
-    router.push('/home');
+    router.push('/chats/FriendPage');
   }
 
   const form = useForm({
@@ -43,7 +43,7 @@ const LoginPage = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log(userCredential);
-      router.push('/home');
+      router.push('/chats/FriendPage');
     } catch (error) {
       console.log(error);
       setError('Invalid email or password. Please try again.');
