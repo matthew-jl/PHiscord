@@ -1,4 +1,5 @@
 // Import the functions you need from the SDKs you need
+import { getDatabase } from "@firebase/database";
 import { getFirestore } from "@firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 import { initializeApp } from "firebase/app";
@@ -14,7 +15,8 @@ const firebaseConfig = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  databaseURL: 'https://***REMOVED***-default-rtdb.asia-southeast1.firebasedatabase.app/',
 };
 
 // Initialize Firebase
@@ -23,6 +25,7 @@ const auth = getAuth(app);
 const analytics = app.name && typeof window !== 'undefined' ? getAnalytics(app) : null;
 const db = getFirestore(app);
 const storage = getStorage();
+const database = getDatabase(app);
 // const storageRef = ref(storage); // points to root of our storage
 
-export { app, auth, analytics, db, storage }
+export { app, auth, analytics, db, storage, database }

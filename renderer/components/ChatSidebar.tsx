@@ -7,6 +7,7 @@ import { doc, getDoc, onSnapshot } from '@firebase/firestore';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { db, storage } from '@/lib/firebaseConfig';
 import { Input } from './ui/input';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 const ChatSidebar = () => {
     const user = useAuth();
@@ -14,6 +15,8 @@ const ChatSidebar = () => {
     const { chatId } = router.query;
     const friendsIsActive = router.pathname === '/chats/FriendPage';
     const [chats, setChats] = useState([]);
+    const [messageRequests, setMessageRequests] = useState([]);
+    const [friends, setFriends] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
@@ -24,7 +27,15 @@ const ChatSidebar = () => {
         const unsubscribe = onSnapshot(userRef, async (userSnap) => {
             if (!userSnap.exists()) return;
             const userData = userSnap.data();
+
+            let privacyMessages = 'allow';
+            if (userData.privacySettings && userData.privacySettings.directMessages) {
+                privacyMessages = userData.privacySettings.directMessages;
+            }
+
             const chatIds = Object.keys(userData.chats || {});
+            const friendsList = Object.keys(userData.friends || {});
+            setFriends(friendsList);
 
             const chatRefs = chatIds.map((chatId) => doc(db, 'chats', chatId));
 
@@ -43,17 +54,47 @@ const ChatSidebar = () => {
                         otherUserImageUrl = await getDownloadURL(ref(storage, otherUserData.imageUrl));
                     }
 
-                    setChats((prevChats) => {
-                        const updatedChats = prevChats.filter((c) => c.chatId !== chatSnap.id);
-                        updatedChats.push({
-                            chatId: chatSnap.id,
-                            userId: otherUserId,
-                            username: otherUserData.username,
-                            userImageUrl: otherUserImageUrl,
-                            timestamp: chat.timestamp ? chat.timestamp.toMillis() : 0,
+                    const chatData = {
+                        chatId: chatSnap.id,
+                        userId: otherUserId,
+                        username: otherUserData.username,
+                        userImageUrl: otherUserImageUrl,
+                        timestamp: chat.timestamp ? chat.timestamp.toMillis() : 0,
+                    };
+
+                    if (privacyMessages === 'allow') {
+                        setChats((prevChats) => {
+                            const updatedChats = prevChats.filter((c) => c.chatId !== chatSnap.id);
+                            updatedChats.push(chatData);
+                            return updatedChats.sort((a, b) => b.timestamp - a.timestamp);
                         });
-                        return updatedChats.sort((a, b) => b.timestamp - a.timestamp);
-                    });
+                    }
+
+                    if (privacyMessages === 'request') {
+                        if (!friendsList.includes(otherUserId)) {
+                            setMessageRequests((prevRequests) => {
+                                const updatedRequests = prevRequests.filter((c) => c.chatId !== chatSnap.id);
+                                updatedRequests.push(chatData);
+                                return updatedRequests.sort((a, b) => b.timestamp - a.timestamp);
+                            });
+                        } else {
+                            setChats((prevChats) => {
+                                const updatedChats = prevChats.filter((c) => c.chatId !== chatSnap.id);
+                                updatedChats.push(chatData);
+                                return updatedChats.sort((a, b) => b.timestamp - a.timestamp);
+                            });
+                        }
+                    }
+
+                    if (privacyMessages === 'block') {
+                        if (friendsList.includes(otherUserId)) {
+                            setChats((prevChats) => {
+                                const updatedChats = prevChats.filter((c) => c.chatId !== chatSnap.id);
+                                updatedChats.push(chatData);
+                                return updatedChats.sort((a, b) => b.timestamp - a.timestamp);
+                            });
+                        }
+                    }
                 })
             );
 
@@ -86,7 +127,7 @@ const ChatSidebar = () => {
                         <p className='ml-3'>Friends</p>
                     </div>
                     <div className='space-y-1'>
-                        <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>direct messages</p>
+                        <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>direct messages - {chats.length}</p>
                         <Input 
                             placeholder='Search conversations'
                             value={searchQuery}
@@ -105,6 +146,32 @@ const ChatSidebar = () => {
                                 />
                         ))}
                     </div>
+                    {messageRequests.length > 0 && (
+                        <div className='space-y-1 mt-4'>
+                            <Accordion type='single' collapsible>
+                                <AccordionItem value='message-requests' className='border-none'>
+                                    <AccordionTrigger>
+                                        <p className='uppercase text-xs font-semibold tracking-widest text-primary/80 pl-2'>message requests - {messageRequests.length}</p>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        {messageRequests.map((chat) => (
+                                            <>
+                                                <ChatItem
+                                                    key={chat.chatId}
+                                                    chatId={chat.chatId}
+                                                    userId={chat.userId}
+                                                    username={chat.username}
+                                                    userImageUrl={chat.userImageUrl}
+                                                    onClick={() => router.push(`/chats/${chat.chatId}/ChatPage`)}
+                                                    active={chat.chatId === chatId}
+                                                />
+                                            </>
+                                        ))}
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </div>
+                    )}
                 </div>
             </ScrollArea>
         </div>
@@ -130,7 +197,7 @@ const ChatItem = ({ chatId, userId, username, userImageUrl, onClick, active }: C
             <img src={userImageUrl} alt={username} className='w-full h-full object-cover' />
         </div>
         <div className='ml-4'>
-            <p className='text-primary'>{username}</p>
+            <p className='text-primary text-base'>{username}</p>
         </div>
     </div>
 );

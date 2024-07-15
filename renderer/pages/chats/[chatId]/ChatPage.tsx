@@ -1,6 +1,7 @@
 import ChatMessage from '@/components/ChatMessage';
 import ChatSidebar from '@/components/ChatSidebar';
 import Loading from '@/components/Loading';
+import MediaRoom from '@/components/MediaRoom';
 import Sidebar from '@/components/Sidebar'
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -16,10 +17,12 @@ import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { IoMdCall } from 'react-icons/io';
 import { IoDocumentSharp, IoSearch, IoSend } from 'react-icons/io5';
 import { MdEmojiEmotions } from 'react-icons/md';
-import { RiAttachment2 } from 'react-icons/ri';
+import { RiArrowDropDownLine, RiAttachment2 } from 'react-icons/ri';
+import { HiPhoneMissedCall } from "react-icons/hi";
 import { v4 } from 'uuid';
 
 const ChatPage = () => {
@@ -42,6 +45,9 @@ const ChatPage = () => {
   const [targetUserData, setTargetUserData] = useState(null);
   const [blockExists, setBlockExists] = useState(false);
   const { toast } = useToast();
+  const [chatPrivacyIsBlock, setChatPrivacyIsBlock] = useState(false);
+  const [callPrivacyIsBlock, setCallPrivacyIsBlock] = useState(false);
+  const [ongoingCallExists, setOngoingCallExists] = useState(false);
 
   const { theme } = useTheme();
   let emojiPickerTheme = Theme.AUTO;
@@ -53,6 +59,7 @@ const ChatPage = () => {
   
   useEffect(() => {
     const fetchTargetData = async () => {
+        setOngoingCallExists(false);
         if (!user) return;
         setIsLoading(true);
         const chatDoc = await getDoc(doc(db, 'chats', chatId));
@@ -78,6 +85,16 @@ const ChatPage = () => {
         if (otherUserData.blocks && otherUserData.blocks[user.uid]) {
             setBlockExists(true);
         }
+
+        // if user is not a friend of other user, and the other user set their privacy settings to block, then setChatPrivacyIsBlock
+        if (!otherUserData.friends || (otherUserData.friends && !otherUserData.friends[user.uid])) {
+            if (otherUserData.privacySettings && otherUserData.privacySettings.directMessages === 'block') {
+                setChatPrivacyIsBlock(true);
+            }
+            if (otherUserData.privacySettings && otherUserData.privacySettings.calls === 'block') {
+                setCallPrivacyIsBlock(true);
+            }
+        }
         setIsLoading(false);
     };
     fetchTargetData();
@@ -100,13 +117,29 @@ const ChatPage = () => {
   }, [user, targetUserData]);
   
   useEffect(() => {
+    if (!chatId) return;
     const unSub = onSnapshot(doc(db, 'chatMessages', chatId), (doc) => {
         setChat(doc.data());
     });
     return () => {
         unSub();
     };
-  }, [router]);
+  }, [router, chatId]);
+
+  // Scroll to bottom automatically
+  const scrollAreaRef = useRef(null);
+  const scrollToBottom = () => {
+      scrollAreaRef.current?.scrollIntoView({ behavior: "smooth" })
+      console.log('scrolled')
+  }
+
+  useLayoutEffect(() => {
+      if (!isLoading) {
+          setTimeout(() => {
+              scrollToBottom();
+          }, 1000);
+      }
+  }, [chat]);
 
   const handleEmoji = (e) => {
       setText((prev) => prev + e.emoji);
@@ -222,6 +255,22 @@ const ChatPage = () => {
             size: null,
         });
         return;
+    } else if (chatPrivacyIsBlock) {
+        // toast to indicate other user has set privacy to block
+        toast({
+            title: "Cannot send message",
+            description: "The other user has set their privacy settings to block messages from non-friends.",
+            variant: 'destructive',
+        })
+        setText('');
+        setFile({
+            type: null,
+            file: null,
+            url: '',
+            uploadUrl: '',
+            size: null,
+        });
+        return;
     }
     if (text === '' && !file.file) return;
     try {
@@ -292,6 +341,47 @@ const handleEdit = async (message, newContent) => {
     }
 };
 
+const handleStartCall = async () => {
+    if (callPrivacyIsBlock) {
+        toast({
+            title: 'Cannot start a call',
+            description: 'The other user has set their privacy settings to block calls from non-friends.',
+            variant: 'destructive',
+        });
+        return;
+    }
+
+    // signify that the user started a call by sending a message in the chat
+    await updateDoc(doc(db, 'chatMessages', chatId), {
+        messages: arrayUnion({
+            userId: user.uid,
+            content: '[ JOINED VOICE CALL ]',
+            timestamp: new Date(),
+        }),
+    });
+    await updateDoc(doc(db, 'chats', chatId), {
+      timestamp: serverTimestamp(),
+    });
+
+    setOngoingCallExists(true);
+};
+
+const handleEndCall = async () => {
+    // signify that the user ended the call
+    await updateDoc(doc(db, 'chatMessages', chatId), {
+        messages: arrayUnion({
+            userId: user.uid,
+            content: '[ LEFT VOICE CALL ]',
+            timestamp: new Date(),
+        }),
+    });
+    await updateDoc(doc(db, 'chats', chatId), {
+      timestamp: serverTimestamp(),
+    });
+
+    setOngoingCallExists(false);
+}
+
   return (
     <>
       <Sidebar chatIsActive />
@@ -305,6 +395,16 @@ const handleEdit = async (message, newContent) => {
                     <img src={ targetUserData.imageUrl } alt={ targetUserData.uid } className='w-full h-full object-cover'/>
                 </div>
                 <p className='grow pl-4 font-semibold '>{ targetUserData.username }</p>
+                {/* Call Button */}
+                {ongoingCallExists ? (
+                    <Button variant='destructive' size='icon' className='h-8 w-8' onClick={handleEndCall}>
+                        <HiPhoneMissedCall />
+                    </Button>
+                ) : (
+                    <Button variant='blurple' size='icon' className='h-8 w-8' onClick={handleStartCall}>
+                        <IoMdCall />
+                    </Button>
+                )}
                 {/* Search Bar */}
                 <div className='relative ml-4 w-96'>
                         <Input 
@@ -344,86 +444,105 @@ const handleEdit = async (message, newContent) => {
                     </div>
               </div>
               {/* Content */}
-              <ScrollArea className='h-full'>
-                  <div className='flex flex-col space-y-6 h-[685px]'>
-                    <div className='flex-1' />
-                    {/* Content Header */}
-                    <div className='space-y-2 px-4'>
-                        <div className='bg-dc-900 rounded-full w-24 h-24 overflow-hidden'>
-                            <img src={ targetUserData.imageUrl } alt={ targetUserData.uid } className='w-full h-full object-cover'/>
+              { ongoingCallExists ? (
+                <>
+                    <div className='w-full h-full'>
+                        <MediaRoom 
+                            chatId={chatId}
+                            audio={true}
+                            video={false}
+                        />
+                    </div>
+                </>
+              ) : (
+                <>
+                    <ScrollArea className='h-full'>
+                        <div className='flex flex-col space-y-6 h-[685px]'>
+                            <div className='flex-1' />
+                            {/* Content Header */}
+                            <div className='space-y-2 px-4'>
+                                <div className='bg-dc-900 rounded-full w-24 h-24 overflow-hidden'>
+                                    <img src={ targetUserData.imageUrl } alt={ targetUserData.uid } className='w-full h-full object-cover'/>
+                                </div>
+                                <p className='text-2xl font-bold'>{ targetUserData.username }</p>
+                                <p className='text-sm text-primary/80'>This is the beginning of your direct message history with { targetUserData.username }.</p>
+                            </div>
+                            {/* Messages */}
+                            <div className="space-y-2">
+                                {chat &&
+                                    chat.messages &&
+                                    chat.messages.map((message) => (
+                                        <ChatMessage
+                                            key={message.timestamp}
+                                            userId={message.userId}
+                                            content={message.content}
+                                            timestamp={message.timestamp}
+                                            onDelete={() => handleDelete(message)}
+                                            onEdit={(newContent) => handleEdit(message, newContent)}
+                                            isEdited={message?.isEdited}
+                                            imageUrl={message?.imageUrl}
+                                            fileUrl={message?.fileUrl}
+                                            fileSize={message?.fileSize}
+                                            currentUserName={currentUserName}
+                                        />
+                                    ))}
+                            </div>
+                            <div ref={scrollAreaRef}></div>
                         </div>
-                        <p className='text-2xl font-bold'>{ targetUserData.username }</p>
-                        <p className='text-sm text-primary/80'>This is the beginning of your direct message history with { targetUserData.username }.</p>
-                    </div>
-                    {/* Messages */}
-                    <div className="space-y-2">
-                        {chat &&
-                            chat.messages &&
-                            chat.messages.map((message) => (
-                                <ChatMessage
-                                    key={message.timestamp}
-                                    userId={message.userId}
-                                    content={message.content}
-                                    timestamp={message.timestamp}
-                                    onDelete={() => handleDelete(message)}
-                                    onEdit={(newContent) => handleEdit(message, newContent)}
-                                    isEdited={message?.isEdited}
-                                    imageUrl={message?.imageUrl}
-                                    fileUrl={message?.fileUrl}
-                                    fileSize={message?.fileSize}
-                                    currentUserName={currentUserName}
-                                />
-                            ))}
-                    </div>
-                  </div>
-              </ScrollArea>
-              {/* Input */}
-              <div className="w-full h-fit px-4 pb-4 pt-2 relative flex space-x-2">
-                <Input
-                    className="bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0"
-                    placeholder={`Message @${targetUserData.username}`}
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                />
-                <Label htmlFor="imageInput" className="absolute right-28 bottom-6 cursor-pointer">
-                    <RiAttachment2 size={24} />
-                </Label>
-                <Input type="file" id="imageInput" className="hidden" onChange={handleFile} />
-                {file.file && (
-                    <div className="absolute right-16 bottom-16 w-60 h-fit bg-dc-900 rounded-md p-2">
-                        {file.type === 'image' && (
-                            <>
-                                <p className="text-xs">Image selected: {file.file.name}</p>
-                                <div className="w-52 h-52 mx-auto my-2">
-                                    <img src={file.url} alt={file.file.name} className="w-full h-full object-contain" />
-                                </div>
-                            </>
+                    </ScrollArea>
+                    {/* Input */}
+                    <div className="w-full h-fit px-4 pb-4 pt-2 relative flex space-x-2">
+                        <Input
+                            className="bg-dc-900 p-2 rounded-md focus-visible:ring-0 focus-visible:ring-offset-0"
+                            placeholder={`Message @${targetUserData.username}`}
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            onDrop={handleDrop}
+                            onDragOver={handleDragOver}
+                        />
+                        <Label htmlFor="imageInput" className="absolute right-28 bottom-6 cursor-pointer">
+                            <RiAttachment2 size={24} />
+                        </Label>
+                        <Input type="file" id="imageInput" className="hidden" onChange={handleFile} />
+                        {file.file && (
+                            <div className="absolute right-16 bottom-16 w-60 h-fit bg-dc-900 rounded-md p-2">
+                                {file.type === 'image' && (
+                                    <>
+                                        <p className="text-xs">Image selected: {file.file.name}</p>
+                                        <div className="w-52 h-52 mx-auto my-2">
+                                            <img src={file.url} alt={file.file.name} className="w-full h-full object-contain" />
+                                        </div>
+                                    </>
+                                )}
+                                {file.type === 'file' && (
+                                    <>
+                                        <p className="text-xs">File selected: {file.file.name}</p>
+                                        <div className="w-52 h-52 mx-auto my-2 flex flex-col justify-center items-center">
+                                            <IoDocumentSharp size={60} />
+                                            <p className="text-sm">{file.size}</p>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         )}
-                        {file.type === 'file' && (
-                            <>
-                                <p className="text-xs">File selected: {file.file.name}</p>
-                                <div className="w-52 h-52 mx-auto my-2 flex flex-col justify-center items-center">
-                                    <IoDocumentSharp size={60} />
-                                    <p className="text-sm">{file.size}</p>
-                                </div>
-                            </>
-                        )}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger className="absolute right-20 bottom-6">
+                                <MdEmojiEmotions size={24} />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align='end' side='top' sideOffset={5} alignOffset={-22} className="bg-transparent border-transparent shadow-none">
+                                <EmojiPicker theme={emojiPickerTheme} onEmojiClick={handleEmoji} />
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button size="icon" variant="blurple" onClick={handleSend}>
+                            <IoSend />
+                        </Button>
+                         {/* Scroll Button */}
+                         <Button onClick={scrollToBottom} variant='outline' size='icon' className='absolute right-4 bottom-16 rounded-full bg-dc-900'>
+                            <RiArrowDropDownLine size={24} className='text-primary'/>
+                        </Button>
                     </div>
-                )}
-                <DropdownMenu>
-                    <DropdownMenuTrigger className="absolute right-20 bottom-6">
-                        <MdEmojiEmotions size={24} />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align='end' side='top' sideOffset={5} alignOffset={-22} className="bg-transparent border-transparent shadow-none">
-                        <EmojiPicker theme={emojiPickerTheme} onEmojiClick={handleEmoji} />
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                <Button size="icon" variant="blurple" onClick={handleSend}>
-                    <IoSend />
-                </Button>
-              </div>
+                </>
+              )}
           </div> 
         </div>
       )}

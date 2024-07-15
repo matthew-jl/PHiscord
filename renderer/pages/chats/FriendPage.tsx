@@ -4,7 +4,7 @@ import Sidebar from '@/components/Sidebar'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import React, { ReactNode, useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { and, collection, deleteDoc, doc, getDoc, getDocs, or, query, serverTimestamp, setDoc, updateDoc, where } from '@firebase/firestore';
+import { and, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, or, query, serverTimestamp, setDoc, updateDoc, where } from '@firebase/firestore';
 import { db, storage } from '@/lib/firebaseConfig';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -24,6 +24,7 @@ const FriendPage = ({ children }: FriendPageProps) => {
     const [outgoingRequests, setOutgoingRequests] = useState([]);
     const [friends, setFriends] = useState([]);
     const [blockedFriends, setBlockedFriends] = useState([]);
+    const [onlineFriends, setOnlineFriends] = useState([]);
     const user = useAuth();
     const router = useRouter();
 
@@ -115,6 +116,7 @@ const FriendPage = ({ children }: FriendPageProps) => {
                   friendId: friendId,
                   friendName: friendData.username,
                   friendImageUrl: friendImageUrl,
+                  isOnline: friendData?.isOnline,
                 };
               }
               return null;
@@ -125,7 +127,7 @@ const FriendPage = ({ children }: FriendPageProps) => {
           console.error('Error fetching friends:', error);
         }
         setIsLoading(false);
-      };
+    };
 
       const fetchBlockedFriends = async () => {
         if (!user) return;
@@ -171,6 +173,32 @@ const FriendPage = ({ children }: FriendPageProps) => {
         handleRefresh();
     }, [user]);
 
+    // real-time online status
+    useEffect(() => {
+      if (!user || friends.length === 0) return;
+    
+      const unsubscribes = friends.map(friend => {
+        const friendDocRef = doc(db, 'users', friend.friendId);
+        
+        return onSnapshot(friendDocRef, (doc) => {
+          if (doc.exists()) {
+            const data = doc.data();
+            setFriends(prevFriends => {
+              const updatedFriends = prevFriends.map(f => 
+                f.friendId === friend.friendId ? { ...f, isOnline: data.isOnline } : f
+              );
+              setOnlineFriends(updatedFriends.filter(f => f.isOnline));
+              return updatedFriends;
+            });
+          }
+        });
+      });
+    
+      return () => {
+        unsubscribes.forEach(unsubscribe => unsubscribe());
+      };
+    }, [user, friends]);
+
     return (
     <>
         <Sidebar chatIsActive />
@@ -204,6 +232,7 @@ const FriendPage = ({ children }: FriendPageProps) => {
                                                     senderName={request.senderName}
                                                     senderImageUrl={request.senderImageUrl}
                                                     onRequestAction={handleRefresh}
+                                                    user={user}
                                                 />
                                             ))}
                                             </>
@@ -232,7 +261,22 @@ const FriendPage = ({ children }: FriendPageProps) => {
                                     </TabsContent>
                                     <TabsContent value="online">
                                         <div>
-                                            <p className='ml-2 text-xs font-semibold tracking-widest uppercase text-primary/80'> No Online Friends :(</p>
+                                            {onlineFriends.length > 0 ? (
+                                              onlineFriends.map((friend) => (
+                                                <FriendItem
+                                                  key={friend.id}
+                                                  friendshipId={friend.id}
+                                                  friendId={friend.friendId}
+                                                  friendName={friend.friendName}
+                                                  friendImageUrl={friend.friendImageUrl}
+                                                  onRemoveFriend={handleRefresh}
+                                                  user={user}
+                                                  router={router}
+                                                />
+                                              )) 
+                                            ) : (
+                                              <p className='ml-2 text-xs font-semibold tracking-widest uppercase text-primary/80'> No Online Friends :(</p>
+                                            )}
                                         </div>
                                     </TabsContent>
                                     <TabsContent value="all">
@@ -293,15 +337,26 @@ type RequestItemProps = {
     senderName: string;
     senderImageUrl: string;
     onRequestAction: () => void;
+    user: any;
   };
   
-  const RequestItem = ({ requestId, senderId, senderName, senderImageUrl, onRequestAction }: RequestItemProps) => {
+  const RequestItem = ({ requestId, senderId, senderName, senderImageUrl, onRequestAction, user }: RequestItemProps) => {
     const { toast } = useToast();
     const handleAccept = async () => {
       try {
+        // update 'friendships'
         await updateDoc(doc(db, 'friendships', requestId), {
           accepted: true,
         });
+
+        // update 'users' for both users
+        await updateDoc(doc(db, 'users', user.uid), {
+          [`friends.${senderId}`]: true
+        });
+        await updateDoc(doc(db, 'users', senderId), {
+          [`friends.${user.uid}`]: true
+        });
+
         onRequestAction();
         toast({
           description: 'Successfully accepted friend request.'
@@ -384,13 +439,37 @@ const OutgoingRequestItem = ({ requestId, receiverId, receiverName, receiverImag
     onRemoveFriend: () => void;
     user: any;
     router: any;
+    isOnline?: boolean;
   };
   
-  const FriendItem = ({ friendshipId, friendId, friendName, friendImageUrl, onRemoveFriend, user, router }: FriendItemProps) => {
+  const FriendItem = ({ friendshipId, friendId, friendName, friendImageUrl, onRemoveFriend, user, router, isOnline }: FriendItemProps) => {
     const { toast } = useToast();
     const handleRemove = async () => {
       try {
+        // delete 'friendships'
         await deleteDoc(doc(db, 'friendships', friendshipId));
+        // update friends in 'users' for current user
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+            const userData = userSnap.data();
+            if (userData.friends && userData.friends[friendId]) {
+                const updatedFriends= { ...userData.friends };
+                delete updatedFriends[friendId];
+                await updateDoc(userRef, { friends: updatedFriends });
+            }
+        }
+        // update friends in 'users' for other user
+        const userRef2 = doc(db, 'users', friendId);
+        const userSnap2 = await getDoc(userRef2);
+        if (userSnap2.exists()) {
+            const userData2 = userSnap2.data();
+            if (userData2.friends && userData2.friends[user.uid]) {
+                const updatedFriends2= { ...userData2.friends };
+                delete updatedFriends2[user.uid];
+                await updateDoc(userRef2, { friends: updatedFriends2 });
+            }
+        }
         onRemoveFriend();
         toast({
           description: 'Successfully removed friend.'

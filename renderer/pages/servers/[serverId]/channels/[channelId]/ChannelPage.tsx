@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import ServerPage from '../../ServerPage';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import ChatMessage from '@/components/ChatMessage';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { v4 } from 'uuid';
 import { Label } from '@/components/ui/label';
-import { RiAttachment2 } from 'react-icons/ri';
+import { RiArrowDropDownLine, RiAttachment2 } from 'react-icons/ri';
 import { ref, uploadBytes } from 'firebase/storage';
 import { HiMiniSpeakerWave } from 'react-icons/hi2';
 import MediaRoom from '@/components/MediaRoom';
@@ -41,48 +41,67 @@ const ChannelPage = () => {
 
     const [currentUserName, setCurrentUserName] = useState(null);
     useEffect(() => {
-        const fetchCurrentUserData = async () => {
-            if (!user || !serverId) return;
-            const serverMemberDoc = await getDoc(doc(db, 'serverMembers', serverId));
-            if (serverMemberDoc.exists()) {
-                if (serverMemberDoc.data()[user.uid].nickname && serverMemberDoc.data()[user.uid].nickname !== '') {
-                    setCurrentUserName(serverMemberDoc.data()[user.uid].nickname);
+        const fetchData = async () => {
+            if (!user || !serverId || !channelId) return;
+            setIsLoading(true);
+            try {
+                const [serverMemberDoc, userDoc, channelDoc] = await Promise.all([
+                    getDoc(doc(db, 'serverMembers', serverId)),
+                    getDoc(doc(db, 'users', user.uid)),
+                    getDoc(doc(db, 'channels', channelId)),
+                ]);
+
+                if (serverMemberDoc.exists() && userDoc.exists() && channelDoc.exists()) {
+                    const serverMemberData = serverMemberDoc.data();
+                    const userData = userDoc.data();
+
+                    setCurrentUserName(serverMemberData[user.uid]?.nickname || userData.username);
+                    setChannelData(channelDoc.data());
+
+                    const unSub = onSnapshot(doc(db, 'channelMessages', channelId), (doc) => {
+                        setChat(doc.data());
+                        setIsLoading(false);
+                    });
+
+                    return () => unSub();
                 } else {
-                    const userDoc = await getDoc(doc(db, 'users', user.uid));
-                    setCurrentUserName(userDoc.data().username);
+                    setIsLoading(false);
                 }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                setIsLoading(false);
             }
         }
-        fetchCurrentUserData();
-    }, [user])
+        fetchData();
+    }, [user, serverId, channelId])
 
     const [isLoading, setIsLoading] = useState(true);
     const [channelData, setChannelData] = useState(null);
-    useEffect(() => {
-        const fetchChannelData = async () => {
-            setIsLoading(true);
-            const channelDoc = await getDoc(doc(db, 'channels', channelId));
-            if (channelDoc.exists()) {
-                setChannelData(channelDoc.data());
-            }
+    // useEffect(() => {
+    //     const fetchChannelData = async () => {
+    //         setIsLoading(true);
+    //         const channelDoc = await getDoc(doc(db, 'channels', channelId));
+    //         if (channelDoc.exists()) {
+    //             setChannelData(channelDoc.data());
+    //         }
 
-            setIsLoading(false);
-        };
-        fetchChannelData();
-    }, [router]);
+    //         setIsLoading(false);
+    //     };
+    //     fetchChannelData();
+    // }, [router]);
 
     // Read chat real-time
     const [chat, setChat] = useState(null);
-    useEffect(() => {
-        if (!channelData) return;
-        else if (channelData.type !== 'text') return;
-        const unSub = onSnapshot(doc(db, 'channelMessages', channelId), (doc) => {
-            setChat(doc.data());
-        });
-        return () => {
-            unSub();
-        };
-    }, [router, channelData]);
+    // useEffect(() => {
+    //     if (!channelData) return;
+    //     else if (channelData.type !== 'text') return;
+    //     const unSub = onSnapshot(doc(db, 'channelMessages', channelId), (doc) => {
+    //         setChat(doc.data());
+    //     });
+    //     return () => {
+    //         unSub();
+    //     };
+    // }, [router, channelData]);
 
     // Search functionality
     const [searchQuery, setSearchQuery] = useState('');
@@ -95,14 +114,20 @@ const ChannelPage = () => {
         setSearchResults(results);
     };
 
-    // TODO: Scroll to bottom automatically
-    // const scrollAreaRef = useRef(null);
-    // const scrollToBottom = () => {
-    //     scrollAreaRef.current?.scrollIntoView({ behavior: "smooth" })
-    // }
-    // useEffect(() => {
-    //     scrollToBottom()
-    // }, [chat]);
+    // Scroll to bottom automatically
+    const scrollAreaRef = useRef(null);
+    const scrollToBottom = () => {
+        scrollAreaRef.current?.scrollIntoView({ behavior: "smooth" })
+        console.log('scrolled')
+    }
+
+    useLayoutEffect(() => {
+        if (!isLoading) {
+            setTimeout(() => {
+                scrollToBottom();
+            }, 1000);
+        }
+    }, [chat]);
     
     // append emoji to text when emoji is chosen
     const handleEmoji = (e) => {
@@ -358,7 +383,7 @@ const ChannelPage = () => {
                                     />
                                 )) }
                             </div>
-                            {/* <div ref={scrollAreaRef}></div> */}
+                            <div ref={scrollAreaRef}></div>
                         </div>
                     </ScrollArea>
                     {/* Chat Input */}
@@ -412,8 +437,13 @@ const ChannelPage = () => {
                                 <EmojiPicker theme={ emojiPickerTheme } onEmojiClick={ handleEmoji }/>
                             </DropdownMenuContent>
                         </DropdownMenu>
+                        {/* Send Button */}
                         <Button size='icon' variant='blurple' onClick={ handleSend }>
                             <IoSend />
+                        </Button>
+                        {/* Scroll Button */}
+                        <Button onClick={scrollToBottom} variant='outline' size='icon' className='absolute right-4 bottom-16 rounded-full bg-dc-900'>
+                            <RiArrowDropDownLine size={24} className='text-primary'/>
                         </Button>
                     </div>
                 </>
