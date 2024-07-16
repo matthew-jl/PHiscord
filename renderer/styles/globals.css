@@ -2,124 +2,161 @@
 @tailwind components;
 @tailwind utilities;
 
-  @layer base {
-    :root {
-      --background: 0 0% 100%;
-      --foreground: 0 0% 3.9%;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
 
-      --card: 0 0% 100%;
-      --card-foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
 
-      --popover: 0 0% 100%;
-      --popover-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
 
-      --primary: 0 0% 9%;
-      --primary-foreground: 0 0% 98%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
 
-      --secondary: 0 0% 96.1%;
-      --secondary-foreground: 0 0% 9%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
 
-      --muted: 0 0% 96.1%;
-      --muted-foreground: 0 0% 45.1%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
 
-      --accent: 0 0% 96.1%;
-      --accent-foreground: 0 0% 9%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
 
-      --destructive: 0 84.2% 60.2%;
-      --destructive-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
 
-      --border: 0 0% 89.8%;
-      --input: 0 0% 89.8%;
-      --ring: 0 0% 3.9%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
 
-      --radius: 0.5rem;
+    --radius: 0.5rem;
 
-      /* discord colors (light) */
-      --dc900: 220 14% 96%;  /* Sidebar color */
-      --dc800: 220 14% 92%;  /* Slightly lighter */
-      --dc700: 220 14% 88%;  /* Lighter gray */
-      --dc600: 220 14% 84%;  /* Light gray */
-      --dc400: 220 14% 80%;  /* Medium light gray */
-      --dc300: 220 14% 70%;  /* Medium gray */
-      --dc200: 220 14% 60%;  /* Darker medium gray */
-      --dc100: 220 14% 50%;  /* Lightest gray */
-    }
-
-    .dark {
-      --background: 0 0% 3.9%;
-      --foreground: 0 0% 98%;
-
-      --card: 0 0% 3.9%;
-      --card-foreground: 0 0% 98%;
-
-      --popover: 0 0% 3.9%;
-      --popover-foreground: 0 0% 98%;
-
-      --primary: 0 0% 98%;
-      --primary-foreground: 0 0% 9%;
-
-      --secondary: 0 0% 14.9%;
-      --secondary-foreground: 0 0% 98%;
-
-      --muted: 0 0% 14.9%;
-      --muted-foreground: 0 0% 63.9%;
-
-      --accent: 0 0% 14.9%;
-      --accent-foreground: 0 0% 98%;
-
-      --destructive: 0 62.8% 30.6%;
-      --destructive-foreground: 0 0% 98%;
-
-      --border: 0 0% 14.9%;
-      --input: 0 0% 14.9%;
-      --ring: 0 0% 83.1%;
-
-      /* discord colors (dark) */
-      --dc900: 222 6% 14%;
-      --dc800: 220 6% 20%;
-      --dc700: 220 7% 23%;
-      --dc600: 220 8% 33%;
-      --dc400: 220 14% 84%;
-      --dc300: 220 13% 90%;
-      --dc200: 220 11% 93%;
-      --dc100: 220 10% 96%;
-    }
+    /* discord colors (light) */
+    --dc900: 220 14% 96%; /* Sidebar color */
+    --dc800: 220 14% 92%; /* Slightly lighter */
+    --dc700: 220 14% 88%; /* Lighter gray */
+    --dc600: 220 14% 84%; /* Light gray */
+    --dc400: 220 14% 80%; /* Medium light gray */
+    --dc300: 220 14% 70%; /* Medium gray */
+    --dc200: 220 14% 60%; /* Darker medium gray */
+    --dc100: 220 14% 50%; /* Lightest gray */
   }
 
-  @layer base {
-    * {
-      @apply border-border;
-    }
-    body {
-      @apply bg-background text-foreground;
-    }
-    html {
-      font-size: var(--tw-font-size, 1rem);
-    }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
 
-    .text-xs { font-size: calc(0.75rem * var(--tw-font-size, 1rem)); }
-    .text-sm { font-size: calc(0.875rem * var(--tw-font-size, 1rem)); }
-    .text-base { font-size: calc(1rem * var(--tw-font-size, 1rem)); }
-    .text-lg { font-size: calc(1.125rem * var(--tw-font-size, 1rem)); }
-    .text-xl { font-size: calc(1.25rem * var(--tw-font-size, 1rem)); }
-    .text-2xl { font-size: calc(1.5rem * var(--tw-font-size, 1rem)); }
-    .text-3xl { font-size: calc(1.875rem * var(--tw-font-size, 1rem)); }
-    .text-4xl { font-size: calc(2.25rem * var(--tw-font-size, 1rem)); }
-    .text-5xl { font-size: calc(3rem * var(--tw-font-size, 1rem)); }
-    .text-6xl { font-size: calc(3.75rem * var(--tw-font-size, 1rem)); }
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+
+    /* discord colors (dark) */
+    --dc900: 222 6% 14%;
+    --dc800: 220 6% 20%;
+    --dc700: 220 7% 23%;
+    --dc600: 220 8% 33%;
+    --dc400: 220 14% 84%;
+    --dc300: 220 13% 90%;
+    --dc200: 220 11% 93%;
+    --dc100: 220 10% 96%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    font-size: var(--tw-font-size, 1rem);
   }
 
-  @layer components {
-    .sidebar-icon {
-      @apply flex items-center justify-center h-12 w-12 mx-auto my-2 
+  .text-xs {
+    font-size: calc(0.75rem * var(--tw-font-size, 1rem));
+  }
+  .text-sm {
+    font-size: calc(0.875rem * var(--tw-font-size, 1rem));
+  }
+  .text-base {
+    font-size: calc(1rem * var(--tw-font-size, 1rem));
+  }
+  .text-lg {
+    font-size: calc(1.125rem * var(--tw-font-size, 1rem));
+  }
+  .text-xl {
+    font-size: calc(1.25rem * var(--tw-font-size, 1rem));
+  }
+  .text-2xl {
+    font-size: calc(1.5rem * var(--tw-font-size, 1rem));
+  }
+  .text-3xl {
+    font-size: calc(1.875rem * var(--tw-font-size, 1rem));
+  }
+  .text-4xl {
+    font-size: calc(2.25rem * var(--tw-font-size, 1rem));
+  }
+  .text-5xl {
+    font-size: calc(3rem * var(--tw-font-size, 1rem));
+  }
+  .text-6xl {
+    font-size: calc(3.75rem * var(--tw-font-size, 1rem));
+  }
+}
+
+@layer components {
+  .sidebar-icon {
+    @apply flex items-center justify-center h-12 w-12 mx-auto my-2 
       bg-background text-dc-green
       rounded-3xl hover:rounded-xl transition-all ease-linear cursor-pointer
       overflow-hidden;
-    }
+  }
 
-    /* .sidebar-tooltip {
+  /* .sidebar-tooltip {
       @apply absolute w-auto min-w-max left-16 text-primary bg-background
       p-2 m-2 rounded-md shadow-md text-xs font-bold cursor-none
       scale-0 transition-all origin-left;
     } */
+
+  .title-bar {
+    -webkit-app-region: drag;
   }
+
+  .title-bar__controls {
+    -webkit-app-region: no-drag;
+  }
+
+  .title-bar__button {
+    @apply fill-primary;
+    background: none;
+    border: none;
+    padding: 5px;
+    margin: 0 5px;
+    cursor: pointer;
+  }
+}

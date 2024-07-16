@@ -1,115 +1,127 @@
-import path from 'path'
-import { app, ipcMain, Menu, nativeTheme, Tray } from 'electron'
-import serve from 'electron-serve'
-import { createWindow } from './helpers'
+import path from "path";
+import { app, ipcMain, Menu, Tray } from "electron";
+import serve from "electron-serve";
+import { createWindow } from "./helpers";
 
-const isProd = process.env.NODE_ENV === 'production'
+const isProd = process.env.NODE_ENV === "production";
 
 if (isProd) {
-  serve({ directory: 'app' })
+  serve({ directory: "app" });
 } else {
-  app.setPath('userData', `${app.getPath('userData')} (development)`)
+  app.setPath("userData", `${app.getPath("userData")} (development)`);
 }
 
 let tray = null;
 
-;(async () => {
-  await app.whenReady()
+(async () => {
+  await app.whenReady();
 
-  const mainWindow = createWindow('main', {
+  const mainWindow = createWindow("main", {
     width: 1024,
     height: 640,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
     },
     autoHideMenuBar: true, // hides default menu bar, press ALT to show
-    backgroundColor: '#5865F2',
-    icon: 'renderer/public/images/discord-mark-blue-square.png', 
+    backgroundColor: "#5865F2",
+    icon: "renderer/public/images/discord-mark-blue-square.png",
     // TODO: custom title bar
     // frame: false,
-    // titleBarStyle: 'hidden',
+    titleBarStyle: "hidden",
     // titleBarOverlay: {
     //   color: '#2f3241',
     //   symbolColor: '#74b1be',
     //   height: 60
     // },
-  })
+  });
+
+  ipcMain.on("minimize-window", () => {
+    mainWindow?.minimize();
+  });
+  ipcMain.on("maximize-window", () => {
+    if (mainWindow?.isMaximized()) {
+      mainWindow?.unmaximize();
+    } else {
+      mainWindow?.maximize();
+    }
+  });
+  ipcMain.on("close-window", () => {
+    mainWindow?.close();
+  });
 
   // Maximize window
   mainWindow.maximize();
 
   if (isProd) {
-    await mainWindow.loadURL('app://./home')
+    await mainWindow.loadURL("app://./home");
   } else {
-    const port = process.argv[2]
-    await mainWindow.loadURL(`http://localhost:${port}/home`)
-    mainWindow.webContents.openDevTools()
+    const port = process.argv[2];
+    await mainWindow.loadURL(`http://localhost:${port}/home`);
+    mainWindow.webContents.openDevTools();
   }
 
   // Tray Icon
-  const iconPath = 'renderer/public/images/discord-mark-blue-square.png';
+  const iconPath = "renderer/public/images/discord-mark-blue-square.png";
   tray = new Tray(iconPath);
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Open PHiscord',
+      label: "Open PHiscord",
       click: () => {
         if (mainWindow.isMinimized()) {
           mainWindow.restore();
         }
         mainWindow.focus();
-      }
+      },
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: 'Mute',
+      label: "Mute",
       click: () => {
-        mainWindow.webContents.send('tray-mute');
-      }
+        mainWindow.webContents.send("tray-mute");
+      },
     },
     {
-      label: 'Deafen',
+      label: "Deafen",
       click: () => {
-        mainWindow.webContents.send('tray-deafen');
-      }
+        mainWindow.webContents.send("tray-deafen");
+      },
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: 'Quit',
+      label: "Quit",
       click: () => {
         app.quit();
-      }
-    }
+      },
+    },
   ]);
 
-  tray.setToolTip('PHiscord');
+  tray.setToolTip("PHiscord");
   tray.setContextMenu(contextMenu);
 
-  tray.on('click', () => {
+  tray.on("click", () => {
     if (mainWindow.isMinimized()) {
       mainWindow.restore();
     }
     mainWindow.focus();
   });
 
-  // Listen for theme changes
-  ipcMain.on('theme-change', (event, theme) => {
-    if (theme === 'dark') {
-      nativeTheme.themeSource = 'dark';
-      mainWindow.setBackgroundColor('#000000');
-      mainWindow.setTitleBarOverlay({ color: '#000000', symbolColor: '#ffffff' });
-    } else {
-      nativeTheme.themeSource = 'light';
-      mainWindow.setBackgroundColor('#ffffff');
-      mainWindow.setTitleBarOverlay({ color: '#ffffff', symbolColor: '#000000' });
-    }
-  });
-})()
+  app.setUserTasks([
+    {
+      program: process.execPath,
+      arguments: "--new-window",
+      iconPath: process.execPath,
+      iconIndex: 0,
+      title: "New Window",
+      description: "Create a new window",
+    },
+  ]);
+})();
 
-app.on('window-all-closed', () => {
-  app.quit()
-})
+app.on("window-all-closed", () => {
+  app.quit();
+});
 
-ipcMain.on('message', async (event, arg) => {
-  event.reply('message', `${arg} World!`)
-})
+ipcMain.on("message", async (event, arg) => {
+  event.reply("message", `${arg} World!`);
+});
