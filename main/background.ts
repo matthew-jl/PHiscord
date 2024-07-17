@@ -25,14 +25,7 @@ let tray = null;
     autoHideMenuBar: true, // hides default menu bar, press ALT to show
     backgroundColor: "#5865F2",
     icon: "renderer/public/images/discord-mark-blue-square.png",
-    // TODO: custom title bar
-    // frame: false,
     titleBarStyle: "hidden",
-    // titleBarOverlay: {
-    //   color: '#2f3241',
-    //   symbolColor: '#74b1be',
-    //   height: 60
-    // },
   });
 
   ipcMain.on("minimize-window", () => {

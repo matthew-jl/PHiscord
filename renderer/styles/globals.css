@@ -152,7 +152,7 @@
   }
 
   .title-bar__button {
-    @apply fill-primary;
+    @apply fill-primary hover:fill-primary/50;
     background: none;
     border: none;
     padding: 5px;

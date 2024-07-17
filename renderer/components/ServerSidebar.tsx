@@ -164,11 +164,13 @@ const ServerSidebar = ({
           );
         }
       }
+      toast({
+        description: "Sucessfully left server.",
+      });
     } catch (error) {
       console.error("Error leaving user: ", error);
     } finally {
-      router.push("/home");
-      // setIsLoading(false);
+      router.reload();
     }
   };
 
@@ -332,6 +334,22 @@ const ServerSidebar = ({
     });
   };
 
+  const checkBlockExists = async (blockerId, blockedId) => {
+    const blocksRef = collection(db, "blocks");
+    const q = query(
+      blocksRef,
+      and(
+        where("blockerUser", "==", blockerId),
+        where("blockedUser", "==", blockedId)
+      )
+    );
+    const qSnapshot = await getDocs(q);
+    if (qSnapshot.empty) {
+      return false;
+    }
+    return true;
+  };
+
   type memberItemProps = {
     uid: string;
     username: string;
@@ -349,6 +367,7 @@ const ServerSidebar = ({
     const [friendRequestSent, setFriendRequestSent] = useState(false);
     const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
     const [newNickname, setNewNickname] = useState("");
+    const [blockExists, setBlockExists] = useState(false);
 
     useEffect(() => {
       const checkFriendRequest = async () => {
@@ -357,6 +376,8 @@ const ServerSidebar = ({
           setFriendshipExists(friendshipExists);
           const exists = await friendRequestExists(user.uid, uid);
           setFriendRequestSent(exists);
+          const blockExists = await checkBlockExists(user.uid, uid);
+          setBlockExists(blockExists);
         }
       };
       checkFriendRequest();
@@ -435,6 +456,59 @@ const ServerSidebar = ({
       }
     };
 
+    const handleBlock = async () => {
+      try {
+        await setDoc(doc(db, "blocks", "block" + v4()), {
+          blockedUser: uid,
+          blockerUser: user.uid,
+          timestamp: serverTimestamp(),
+        });
+        await updateDoc(doc(db, "users", user.uid), {
+          [`blocks.${uid}`]: true,
+        });
+        toast({
+          description: "Successfully blocked user.",
+        });
+        setBlockExists(true);
+      } catch (error) {
+        console.error("Error blocking friend:", error);
+      }
+    };
+
+    const handleUnblock = async () => {
+      try {
+        const blocksRef = collection(db, "blocks");
+        const q = query(
+          blocksRef,
+          and(
+            where("blockerUser", "==", user.uid),
+            where("blockedUser", "==", uid)
+          )
+        );
+        const qSnapshot = await getDocs(q);
+        qSnapshot.forEach(async (doc) => {
+          await deleteDoc(doc.ref);
+        });
+
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          if (userData.blocks && userData.blocks[uid]) {
+            const updatedBlocks = { ...userData.blocks };
+            delete updatedBlocks[uid];
+            await updateDoc(userRef, { blocks: updatedBlocks });
+          }
+        }
+        toast({
+          description: "Successfully unblocked user.",
+        });
+        setBlockExists(false);
+      } catch (error) {
+        console.error("Error unblocking friend:", error);
+      }
+    };
+
     return (
       <>
         <DropdownMenu>
@@ -487,6 +561,15 @@ const ServerSidebar = ({
                 <DropdownMenuItem onClick={handleMessage}>
                   Message
                 </DropdownMenuItem>
+                {!blockExists ? (
+                  <DropdownMenuItem onClick={handleBlock}>
+                    Block
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handleUnblock}>
+                    Unblock
+                  </DropdownMenuItem>
+                )}
               </>
             )}
           </DropdownMenuContent>

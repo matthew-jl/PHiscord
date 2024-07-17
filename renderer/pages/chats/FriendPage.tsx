@@ -234,7 +234,7 @@ const FriendPage = ({ children }: FriendPageProps) => {
 
   return (
     <>
-      <Sidebar chatIsActive />
+      {/* <Sidebar chatIsActive /> */}
       {isLoading ? (
         <Loading />
       ) : (

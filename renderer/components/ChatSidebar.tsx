@@ -15,10 +15,10 @@ import {
 } from "./ui/accordion";
 
 const ChatSidebar = () => {
-  const user = useAuth();
   const router = useRouter();
   const { chatId } = router.query;
   const friendsIsActive = router.pathname === "/chats/FriendPage";
+  const user = useAuth();
   const [chats, setChats] = useState([]);
   const [messageRequests, setMessageRequests] = useState([]);
   const [friends, setFriends] = useState([]);
@@ -181,19 +181,17 @@ const ChatSidebar = () => {
                     </AccordionTrigger>
                     <AccordionContent>
                       {messageRequests.map((chat) => (
-                        <>
-                          <ChatItem
-                            key={chat.chatId}
-                            chatId={chat.chatId}
-                            userId={chat.userId}
-                            username={chat.username}
-                            userImageUrl={chat.userImageUrl}
-                            onClick={() =>
-                              router.push(`/chats/${chat.chatId}/ChatPage`)
-                            }
-                            active={chat.chatId === chatId}
-                          />
-                        </>
+                        <ChatItem
+                          key={chat.chatId}
+                          chatId={chat.chatId}
+                          userId={chat.userId}
+                          username={chat.username}
+                          userImageUrl={chat.userImageUrl}
+                          onClick={() =>
+                            router.push(`/chats/${chat.chatId}/ChatPage`)
+                          }
+                          active={chat.chatId === chatId}
+                        />
                       ))}
                     </AccordionContent>
                   </AccordionItem>

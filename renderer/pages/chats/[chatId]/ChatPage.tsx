@@ -27,6 +27,7 @@ import {
   getDoc,
   onSnapshot,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from "@firebase/firestore";
 import EmojiPicker, { Theme } from "emoji-picker-react";
@@ -267,6 +268,12 @@ const ChatPage = () => {
     };
   }, [router]);
 
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter") {
+      handleSend();
+    }
+  };
+
   const handleSend = async () => {
     if (blockExists) {
       // toast to indicate block exists
@@ -325,6 +332,30 @@ const ChatPage = () => {
         timestamp: serverTimestamp(),
       });
       console.log("successfully added data to chatMessages");
+
+      const notificationsRef = await getDoc(
+        doc(db, "notifications", targetUserData.uid)
+      );
+      if (notificationsRef.exists()) {
+        await updateDoc(doc(db, "notifications", targetUserData.uid), {
+          messages: arrayUnion({
+            username: currentUserName,
+            content: text,
+            timestamp: new Date(),
+            chatId: chatId,
+          }),
+        });
+      } else {
+        await setDoc(doc(db, "notifications", targetUserData.uid), {
+          messages: arrayUnion({
+            username: currentUserName,
+            content: text,
+            timestamp: new Date(),
+            chatId: chatId,
+          }),
+        });
+      }
+      console.log("successfully added data to notifications");
     } catch (error) {
       console.log(error);
     }
@@ -393,6 +424,29 @@ const ChatPage = () => {
     await updateDoc(doc(db, "chats", chatId), {
       timestamp: serverTimestamp(),
     });
+    // also send a notification about the call
+    const notificationsRef = await getDoc(
+      doc(db, "notifications", targetUserData.uid)
+    );
+    if (notificationsRef.exists()) {
+      await updateDoc(doc(db, "notifications", targetUserData.uid), {
+        messages: arrayUnion({
+          username: currentUserName,
+          content: "[ JOINED VOICE CALL ]",
+          timestamp: new Date(),
+          chatId: chatId,
+        }),
+      });
+    } else {
+      await setDoc(doc(db, "notifications", targetUserData.uid), {
+        messages: arrayUnion({
+          username: currentUserName,
+          content: "[ JOINED VOICE CALL ]",
+          timestamp: new Date(),
+          chatId: chatId,
+        }),
+      });
+    }
 
     setOngoingCallExists(true);
   };
@@ -415,7 +469,6 @@ const ChatPage = () => {
 
   return (
     <>
-      <Sidebar chatIsActive />
       {isLoading ? (
         <Loading />
       ) : (
@@ -568,6 +621,7 @@ const ChatPage = () => {
                     onChange={(e) => setText(e.target.value)}
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
+                    onKeyDown={handleKeyDown}
                   />
                   <Label
                     htmlFor="imageInput"

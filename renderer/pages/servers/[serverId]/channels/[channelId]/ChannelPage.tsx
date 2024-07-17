@@ -11,6 +11,7 @@ import {
   getDoc,
   onSnapshot,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from "@firebase/firestore";
 import Loading from "@/components/Loading";
@@ -51,22 +52,29 @@ const ChannelPage = () => {
   serverId = Array.isArray(serverId) ? serverId[0] : serverId;
   channelId = Array.isArray(channelId) ? channelId[0] : channelId;
 
+  const [isLoading, setIsLoading] = useState(true);
   const [currentUserName, setCurrentUserName] = useState(null);
+  const [serverMemberData, setServerMemberData] = useState(null);
+  const [channelData, setChannelData] = useState(null);
+  const [serverData, setServerData] = useState(null);
   useEffect(() => {
     const fetchData = async () => {
       if (!user || !serverId || !channelId) return;
       setIsLoading(true);
       try {
-        const [serverMemberDoc, userDoc, channelDoc] = await Promise.all([
-          getDoc(doc(db, "serverMembers", serverId)),
-          getDoc(doc(db, "users", user.uid)),
-          getDoc(doc(db, "channels", channelId)),
-        ]);
+        const [serverMemberDoc, userDoc, channelDoc, serverDoc] =
+          await Promise.all([
+            getDoc(doc(db, "serverMembers", serverId)),
+            getDoc(doc(db, "users", user.uid)),
+            getDoc(doc(db, "channels", channelId)),
+            getDoc(doc(db, "servers", serverId)),
+          ]);
 
         if (
           serverMemberDoc.exists() &&
           userDoc.exists() &&
-          channelDoc.exists()
+          channelDoc.exists() &&
+          serverDoc.exists()
         ) {
           const serverMemberData = serverMemberDoc.data();
           const userData = userDoc.data();
@@ -75,6 +83,8 @@ const ChannelPage = () => {
             serverMemberData[user.uid]?.nickname || userData.username
           );
           setChannelData(channelDoc.data());
+          setServerMemberData(serverMemberDoc.data());
+          setServerData(serverDoc.data());
 
           const unSub = onSnapshot(
             doc(db, "channelMessages", channelId),
@@ -95,9 +105,6 @@ const ChannelPage = () => {
     };
     fetchData();
   }, [user, serverId, channelId]);
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [channelData, setChannelData] = useState(null);
 
   // Read chat real-time
   const [chat, setChat] = useState(null);
@@ -231,6 +238,12 @@ const ChannelPage = () => {
     };
   }, [router]);
 
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter") {
+      handleSend();
+    }
+  };
+
   const handleSend = async () => {
     if (text === "" && !file.file) return;
     try {
@@ -251,6 +264,40 @@ const ChannelPage = () => {
         }),
       });
       console.log("successfully added data to channelMessages");
+
+      // Send a notification to other users in the server
+      const otherUserIds = Object.keys(serverMemberData).filter(
+        (userId) => userId != user.uid
+      );
+      otherUserIds.forEach(async (userId) => {
+        const notificationsRef = await getDoc(doc(db, "notifications", userId));
+        if (notificationsRef.exists()) {
+          await updateDoc(doc(db, "notifications", userId), {
+            messages: arrayUnion({
+              username: currentUserName,
+              content: text,
+              timestamp: new Date(),
+              serverId: serverId,
+              serverName: serverData.name,
+              channelId: channelId,
+              channelName: channelData.name,
+            }),
+          });
+        } else {
+          await setDoc(doc(db, "notifications", userId), {
+            messages: arrayUnion({
+              username: currentUserName,
+              content: text,
+              timestamp: new Date(),
+              serverId: serverId,
+              serverName: serverData.name,
+              channelId: channelId,
+              channelName: channelData.name,
+            }),
+          });
+        }
+        console.log("successfully added data to notifications");
+      });
     } catch (error) {
       console.log(error);
     }
@@ -413,6 +460,7 @@ const ChannelPage = () => {
                   onChange={(e) => setText(e.target.value)}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
+                  onKeyDown={handleKeyDown}
                 />
                 {/* Image Attachment */}
                 <Label

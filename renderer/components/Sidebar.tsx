@@ -21,20 +21,16 @@ import Loading from "./Loading";
 import Link from "next/link";
 import { IoSettingsSharp } from "react-icons/io5";
 
-const Sidebar = ({
-  activeServerId,
-  chatIsActive,
-}: {
-  activeServerId?: string;
-  chatIsActive?: boolean;
-}) => {
+const Sidebar = () => {
+  const router = useRouter();
+  const chatIsActive = router.pathname.includes("/chats");
+  const { serverId } = router.query;
+  const activeServerId = Array.isArray(serverId) ? serverId[0] : serverId;
   const { onOpen } = useModal();
   const user = useAuth();
   const [servers, setServers] = useState([]);
   const [profilePicture, setProfilePicture] = useState(null);
   const [userData, setUserData] = useState(null);
-  const router = useRouter();
-
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -94,6 +90,12 @@ const Sidebar = ({
     fetchServers();
   }, [user]);
 
+  if (
+    router.pathname.includes("/login") ||
+    router.pathname.includes("/register")
+  )
+    return;
+
   return (
     <>
       {isLoading ? (
@@ -106,8 +108,6 @@ const Sidebar = ({
             suppressHydrationWarning
           >
             <div className="flex flex-col items-center">
-              {/* <Link href='/home'>home</Link> */}
-              {/* <SidebarIconTheme icon= { <ModeToggle/> } tooltip="Change Theme"/> */}
               <SidebarIconDM
                 icon={
                   <ThemeImage
@@ -169,13 +169,38 @@ const Sidebar = ({
               <span className="text-sm">{userData.username}</span>
               <span className="text-xs italic">{userData?.customStatus}</span>
             </div>
-            <FaMicrophone size={16} className="mx-2 ml-auto" />
-            <FaHeadphonesAlt size={16} className="mx-1" />
-            <IoSettingsSharp
-              size={16}
-              className="mx-2 cursor-pointer"
-              onClick={() => onOpen("userSettings")}
-            />
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger>
+                  <FaMicrophone size={16} className="mx-2 ml-auto" />
+                </TooltipTrigger>
+                <TooltipContent className="font-semibold">Mute</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger>
+                  <FaHeadphonesAlt size={16} className="mx-1" />
+                </TooltipTrigger>
+                <TooltipContent className="font-semibold">
+                  Deafen
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger>
+                  <IoSettingsSharp
+                    size={16}
+                    className="mx-2 cursor-pointer"
+                    onClick={() => onOpen("userSettings")}
+                  />
+                </TooltipTrigger>
+                <TooltipContent className="font-semibold">
+                  User Settings
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </>
       )}
@@ -234,24 +259,6 @@ const SidebarIconDM = ({
         >
           {icon}
         </div>
-      </TooltipTrigger>
-      <TooltipContent
-        side="right"
-        align="center"
-        sideOffset={10}
-        className="font-semibold"
-      >
-        <p>{tooltip}</p>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
-
-const SidebarIconTheme = ({ icon, tooltip }: iconProps) => (
-  <TooltipProvider delayDuration={100}>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="sidebar-icon bg-accent">{icon}</div>
       </TooltipTrigger>
       <TooltipContent
         side="right"
