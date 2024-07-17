@@ -169,38 +169,42 @@ const Sidebar = () => {
               <span className="text-sm">{userData.username}</span>
               <span className="text-xs italic">{userData?.customStatus}</span>
             </div>
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger>
-                  <FaMicrophone size={16} className="mx-2 ml-auto" />
-                </TooltipTrigger>
-                <TooltipContent className="font-semibold">Mute</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger>
-                  <FaHeadphonesAlt size={16} className="mx-1" />
-                </TooltipTrigger>
-                <TooltipContent className="font-semibold">
-                  Deafen
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger>
-                  <IoSettingsSharp
-                    size={16}
-                    className="mx-2 cursor-pointer"
-                    onClick={() => onOpen("userSettings")}
-                  />
-                </TooltipTrigger>
-                <TooltipContent className="font-semibold">
-                  User Settings
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="ml-auto">
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <FaMicrophone size={16} className="mx-2" />
+                  </TooltipTrigger>
+                  <TooltipContent className="font-semibold">
+                    Mute
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <FaHeadphonesAlt size={16} className="mx-1" />
+                  </TooltipTrigger>
+                  <TooltipContent className="font-semibold">
+                    Deafen
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <IoSettingsSharp
+                      size={16}
+                      className="mx-2 cursor-pointer"
+                      onClick={() => onOpen("userSettings")}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent className="font-semibold">
+                    User Settings
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </>
       )}

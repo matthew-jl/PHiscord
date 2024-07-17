@@ -51,7 +51,6 @@ const Layout = ({ children }: { children: React.ReactElement }) => {
     };
 
     const userStatusFirestoreRef = doc(db, "users", user.uid);
-    console.log("read firestore");
 
     const isOfflineForFirestore = {
       isOnline: false,
@@ -64,7 +63,6 @@ const Layout = ({ children }: { children: React.ReactElement }) => {
     onValue(ref(database, ".info/connected"), (snapshot) => {
       if (snapshot.val() == false) {
         updateDoc(userStatusFirestoreRef, isOfflineForFirestore);
-        console.log("updated firestore offline");
         return;
       }
 
@@ -73,20 +71,17 @@ const Layout = ({ children }: { children: React.ReactElement }) => {
         .then(() => {
           set(userStatusDatabaseRef, isOnlineForDatabase);
           updateDoc(userStatusFirestoreRef, isOnlineForFirestore);
-          console.log("updated firestore online");
         });
     });
 
     window.addEventListener("beforeunload", () => {
       set(userStatusDatabaseRef, isOfflineForDatabase);
       updateDoc(userStatusFirestoreRef, isOfflineForFirestore);
-      console.log("updated firestore offline2");
     });
 
     return () => {
       set(userStatusDatabaseRef, isOfflineForDatabase);
       updateDoc(userStatusFirestoreRef, isOfflineForFirestore);
-      console.log("updated firestore offline3");
     };
   }, [user]);
 
