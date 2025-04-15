@@ -1,16 +1,57 @@
-# dependencies
-node_modules
+# Operating System Files
+# ----------------------------------------------------------------
+.DS_Store
+Thumbs.db
+._*
 
-# logs
+# IDE / Editor directories
+# ----------------------------------------------------------------
+.vscode/
+.idea/
+*.sublime-*
+
+# Dependencies
+# ----------------------------------------------------------------
+node_modules/
+
+# Logs
+# ----------------------------------------------------------------
+logs/
 *.log
+npm-debug.log*
+yarn-error.log
+yarn-debug.log
 
-# next.js
-.next
+# Runtime data
+# ----------------------------------------------------------------
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Next.js build output and cache
+# ----------------------------------------------------------------
+.next/
 next-env.d.ts
+*.tsbuildinfo # TypeScript incremental build info file
 
-# build
-app
-dist
+# Nextron build output
+# ----------------------------------------------------------------
+app/
+dist/
 
-# env
-.env.local
+# General Build Output / Artifacts
+# ----------------------------------------------------------------
+build/
+
+# Test runner reports
+# ----------------------------------------------------------------
+coverage/
+.nyc_output/
+
+# Environment Variables
+# ----------------------------------------------------------------
+# Ignore all .env files by default
+.env*
+# Except this example
+!.env.example

@@ -1,6 +1,5 @@
 import { useRouter } from "next/router";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import ServerPage from "../../ServerPage";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { db, storage } from "@/lib/firebaseConfig";
@@ -36,6 +35,7 @@ import { HiMiniSpeakerWave } from "react-icons/hi2";
 import MediaRoom from "@/components/MediaRoom";
 import { Popover, PopoverContent } from "@/components/ui/popover";
 import { PopoverTrigger } from "@radix-ui/react-popover";
+import ServerPage from "../../ServerPage";
 
 const ChannelPage = () => {
   const { theme } = useTheme();
