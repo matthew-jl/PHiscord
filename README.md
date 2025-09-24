@@ -2,11 +2,9 @@
 
 ![PHiscord Server Chat](./images/server-chat.png)
 
-A Discord clone built as a desktop app using Next.js and Electron. This desktop app is complete with text, voice, and video communication with server-based communities and direct messaging.
+PHiscord is a Discord clone built as a desktop app using Next.js and Electron. This desktop app is complete with text, voice, and video communication with server-based communities and direct messaging.
 
 This project was made to complete the technical test when I applied for the full-time role of Junior Laboratory Assistant at BINUS Software Laboratory Center (SLC). As a part-time laboratory assistant, this was one of my first big programming projects and a very valuable learning experience. The case was on the subject of business analysis and application, which included creating the [System Design and Architecture](#system-design) before development. I was tested by Shania Priccilia, former Resource Management Officer in BINUS SLC, and achieved a score of 92/100.
-
-
 
 **Tech Stack:** Next.js (React), Electron (via Nextron), Firebase (Auth, Firestore, Storage, Realtime Database), LiveKit (Real-time Voice/Video), TypeScript, Tailwind CSS, Shadcn/UI.
 
